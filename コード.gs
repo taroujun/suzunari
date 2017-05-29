@@ -1,191 +1,272 @@
-/**
-[suzunari]
+function SuzunariLayout(layout,pages){
 
-Copyright (c) [2017] [JunYamamoto]
-
-This software is released under the MIT License.
-http://opensource.org/licenses/mit-license.php
-*/
-
-function doGet(e) {
-
-
-  var settings = sheetToJson.loadSheet(e); // sheetToJson Library key MqZYQoF12KAefOpV0V0EPVv2sGzPh2OFS
+  this.pages = pages;
+  this.layout = layout;
   
-  var container = loadLibrary(settings);
-     
-  return container.evaluate();//html.evaluate();
-}
-
-
-function loadLibrary(settings) {
-  if(settings.main.libraryName && settings.main.libraryName !== 'Suzunari' && settings.main.libraryName !== 'suzunari'){
-  var lib = libraryFanc("suzunariMain",settings.main.libraryName);
-  } else { 
-  var lib = libraryFanc("suzunariMain","");
+  this.contentFromSetting = function(setting) { // this を探して、Library Funcを探す 引数はsetting,key(target)書き込む場所,i(page)目的のページ
+    var obj = castLayout(setting.layout);
+    var layout = obj.layout;
+      for (var i = 0; i < layout.length; i++){
+        if(layout[i]){
+          for(var key in layout[i]) {
+            var val = layout[i][key].split("&");  //　”＆”で複数の入力が可能
+              for (var j = 0; j < val.length; j++){
+                var name = this.libraryName + this.libraryNo + key + i;
+               this.insertContent(key,this.searchFunc(val[j],setting,key,obj.pages,i,name),i);
+              // suzunari.appendContent.call(this.content,'header',key + '----' + i + '------' + this.content.pageDiv[i] + '<br>') 
+              // this.addPage('right',0,JSON.stringify(this.content.pageDiv[0].right) + '<br>');
+              };
+           };
+        };
+     };
   };
-
-  var main = lib(settings);
-  var container = main.createContainer(settings);
-  var count = {};
+  
+  this.insertContent = function(key,val,i){
+    if(key && val && i !== undefined){
+      if(key === 'left' || key === 'center' || key === 'right' || key === 'hid'){
+       this.content.pageDiv = this.content.pageDiv || [];
+     //   this.content.pageDiv[i] = this.content.pageDiv[i] || {};
+        this.addPage(key,i,val);
+       // this.addPage('right',0,val + '    ' + i + '    ' + key +'<br>');
+      //  this.content.pageDiv[i] = this.content.pageDiv[i] || {};
+      //     addArrayObject2.call(this.content.pageDiv[i],key,val);
+    }else{
+      suzunari.appendContent.call(this.content,key,val);
+      };
+    };
+  };
+  
+  this.addPage = function(target,page,val){
+    this.content['pageDiv'] = this.content['pageDiv'] || [];
+   this.content['pageDiv'][page] = this.content['pageDiv'][page] || {};
+ //   this.content['pageDiv'][page][target] = this.content['pageDiv'][page][target] || "";
+    if(this.content['pageDiv'][page][target] !== undefined){
+      this.content['pageDiv'][page][target] += val;
+    }else{
+      this.content['pageDiv'][page][target] = val;
+    };
+  };
+  this.test = function(){
+    return "ffffffffffffffffffff";
+  }
  
-  for (var i = 0; i < settings.librarys.length; i++){
-    if(!settings.librarys[i].libraryName || settings.librarys[i].libraryName === 'Suzunari' || settings.librarys[i].libraryName === 'suzunari') {
-    var name = "";
-    } else {
-    var name = settings.librarys[i].libraryName;
-    }    
-    count[settings.librarys[i].libraryName] = counter.call(count,settings.librarys[i].libraryName);
-    lib = libraryFanc("generateSuzunari",name,4);
-    lib = lib(name,i,count[settings.librarys[i].libraryName],settings);
-    container.addData(lib.content,i);
+  this.btnGroup = function(setting,target,pages,pageNo) {
+    var btn = setting.button;
+    
+    if(this.count['btnGroup'+ target] === undefined){
+      this.count['btnGroup'+ target] ++;
+      var btnGroup = "";
+      btnGroup += '<div class="btn-group';
+      btnGroup += this.listPageNo(pages.btnGroup[target]);
+      btnGroup += '">';  // + JSON.stringify(setting.button);
+      btnGroup += this.searchParts(setting.button,"parts",'btnGroup',pages);
+      btnGroup += '</div>';
+    //  this.ifAny('btnGroup-' + target,target,btnGroup);
+    //  this.addPage(target,pageNo,btnGroup);
+      return btnGroup;
+      };
+    //  return btnGroup;
+  }
+
+  this.ulGroup = function(setting,target,pages) {
+    var btn = setting.button;
+    
+    if(this.count['ulGroup'+ target] === undefined){
+      this.count['ulGroup'+ target] ++;
+      var ulGroup = "";
+      ulGroup += '<div class="list-group list-inline';
+      ulGroup += this.listPageNo(pages.ulGroup[target]);
+      ulGroup += '">';// + JSON.stringify(pages);
+      ulGroup += this.searchParts(setting.button,"parts",'ulGroup',pages);
+      ulGroup += '</div>';
+      return ulGroup;
+    //  this.ifAny('ulGroup-' + target,target,ulGroup);
+   //   this.ifAny('ulGrouptest-' + target,'body',ulGroup);
+      };
+  }
+
+  this.listGroup = function(setting,target,pages) {
+    var btn = setting.button;
+    
+    if(this.count['listGroup'+ target] === undefined){
+      this.count['listGroup'+ target] ++;
+      var listGroup = "";
+      listGroup += '<div class="list-group list-inline';
+      listGroup += this.listPageNo(pages.listGroup[target]);
+      listGroup += '">';// + JSON.stringify(pages);
+      listGroup += this.searchParts(setting.button,"parts",'listGroup',pages);
+      listGroup += '</div>';
+      return listGroup
+    //  this.ifAny('listGroup-' + target,target,listGroup);
+      };
+  }
+
+  this.defaultButton = function(btn,btnNo,target,page){
+    var button = "";
+//    var buttonName = 
+
+    this.searchFunc(btn.script,btn,btnNo,'jqueryIni',page);
+
+    switch (target){
+      case 'ulGroup':
+         button += '<a class="nav navbar-nav list-group-item list-group-item-' + btn.style + ' btn-' + this.libraryName + this.libraryNo + '-' + btn.name;
+         button += '" href="javascript:boid(0)" onclick="' + this.libraryName + btn.name + '(' + this.libraryNo + ')">';
+           if(btn.glyphicon) {
+             button += '<span class="list-group-item-text glyphicon ' + btn.glyphicon + '"></span> ';
+            }
+         button += '<b>' + btn.val + '</b></a>'
+       return button;
+        break;
+      case 'listGroup':
+         button += '<a class="list-group-item list-group-item-' + btn.style + ' btn-' + this.libraryName + this.libraryNo + '-' + btn.name
+         button  += '" href="javascript:boid(0)" onclick="' + this.libraryName + btn.name + '(' + this.libraryNo + ')">';
+           if(btn.glyphicon) {
+             button += '<span class="list-group-item-text glyphicon ' + btn.glyphicon + '"></span> ';
+            }
+         button += '<b>' + btn.val + '</b></a>'
+       return button;
+        break;
+      case 'btnGroup':
+      default:
+        button += '<button type="button" class="btn-' + btn.style + ' btn-' + this.libraryName + this.libraryNo + '-' + btn.name
+        button += ' btn-' + btn.size + '" value="click" onclick="' + this.libraryName + btn.name + '(' + this.libraryNo + ')">';
+          if(btn.glyphicon) {
+            button += '<span class="glyphicon ' + btn.glyphicon + '"></span> ';
+          };
+       button += '<b>' + btn.val + '</b></button> ';
+       return button;
+       break;
+    };
   };
   
- return container;
-}
-
-function suzunariMain(settings){
-
-  SuperSuzunari.prototype.createContainer = function(settings) {
-  var container = new suzunariLayout.SuzunariContener(settings);
-  container.footer = settings.main.footer;
-  return container;
+  this.pageButton = function(btn,btnNo,target,page){
+    var buttonName = this.libraryName + this.libraryNo + '-' + btn.name;
+    var val = '$(".btn-' + this.libraryName + this.libraryNo + '-' + btn.name +'").on("click",function(){ pageCanger(' + btnNo + ')});';
+    this.ifAny(buttonName,target,val);
   };
-  SuperSuzunari.prototype.container = {};
-  return new SuperSuzunari(settings.main.libraryName,"main",settings,1);
-
-}
-
-function generateSuzunari(name,libraryNo,count,settings) {
-
-  SuperSuzunari.prototype = Object.create(suzunariLayout.SuzunariLayout.prototype, {value: {constructor: SuperSuzunari}});
-
-  var suzunari = new SuperSuzunari(name,libraryNo,count);   
-
-  suzunari.contentFromSetting(settings.librarys[libraryNo]);
   
-  return suzunari;
+  
+  this.listPageNo = function (ary){
+    var page = " page-cng";
+      for (var i = 0; i < ary.length; i++){
+        page += ' page-' + ary[i];
+      }
+    return page;
+  }
+
+
 }
 
-function suzunariCatchRequest(req){
-  return 'suzunari'
-}
+//SuzunariController.prototype = Object.create(suzunari.SuperSuzunari.prototype, {value: {constructor: SuzunariController}});
 
-function SuperSuzunari(name,libraryNo,count,layout,pages) {
-  //var layoutLibrary = libraryCall('SuzunariLayout','suzunariLayout',2);
-  //layoutLibrary(this,layout);
-  suzunariLayout.SuzunariLayout.call(this,layout);
+function SuzunariContener(parameter){
 
-  // propety
+  html = HtmlService.createTemplateFromFile('main');
 
-  this.libraryName = name;       // libraryNo　リクエスト次にも使える
-  this.libraryNo = libraryNo;    // libraryNo　リクエスト次にも使える
-  this.count = {library: count}; // htmlの重複を回避する為のカウンタ,一時保管場所
-  this.content = {pageDiv:[]};             // htmlコンテンツの入れ物
+  // contens 
+  
+  this.parameter = parameter;  
+  this.title = "suzunari";
+  this.faviconUrl = "https://dl.dropboxusercontent.com/s/5ksh84yv74revaa/Suzunari.ico";
+  this.settings = {};
+  this.data = [];
+  this.layout = [{"left":"class:col-md-4"},
+                 {"center":"class:col-md-4"},
+                 {"right":"class:col-md-4"},
+                 {"modal":"class:container-fluid"}]
+  this.css = HtmlService.createHtmlOutputFromFile('css').getContent();
+  this.plugins = HtmlService.createHtmlOutputFromFile('plugins').getContent();
+  this.pluginCss = HtmlService.createHtmlOutputFromFile('pluginCss').getContent();
+  this.javascript = replaceTag(HtmlService.createHtmlOutputFromFile('javascript').getContent());
+  this.jqueryIni = replaceTag(HtmlService.createHtmlOutputFromFile('jqueryIni').getContent());
+  this.navbarHeader = "";
+  this.header = '<br><br><br><div class="header">';
+  this.pageDiv = [];
+  this.modalDiv = "";
+  this.footer = "<small><a href='#'>Copyright (C) Suzunari since 2017 made japan.</a></small><br>";
+  this.navbarFooter = "";
+  this.html = html
+  
   
   // function
   
-  this.catchRequest = function(req) { return ""}; // google Script run requestLibrary();
+  this.evaluate = function() {
+  
+    html.settings = JSON.stringify(this.settings);
+    html.data = JSON.stringify(this.data);
 
-  this.response = function(req) { return ""}; // google Script run requestLibrary();
-
-  this.addOutputFromFile = function(htmlName) {
-  var outputFromFile = libraryFanc('libraryOutputFromFile',this.libraryName);
-    if(Object.prototype.toString.call(htmlName) === '[object Array]') {
-      for (var i = 0; i < htmlName.length; i++){
-        this.content[htmlName[i]] = outputFromFile(htmlName[i]);
-      }
-    } else {
-    this.content[htmlName] = outputFromFile(htmlName);  
-  }
-}
-      
-  this.liblaryTemplateFromFile = function(htmlName,obj) {
-    var TemplateFromFile = libraryFanc('libraryTemplateFromFile',this.libraryName);
-    var html = TemplateFromFile(htmlName);
-        if(obj) {
-          for(var key in obj) {
-            html[key] = obj[key];
-          }
-        } else {
-        html.libraryName = this.libraryName;
-        html.libraryNo = this.libraryNo;
-        html.count = this.count.library;
-        };
-    return html.evaluate().getContent();
-  }
-  
-  this.setContent = function (obj){
-    this.content = obj;
-  }
-  
-  this.addContent = function (obj){
-    orInsert.call(this.content,obj);
-  }
-  
-  this.addCount = function (obj){
-    orInsert.call(this.count,obj);
-  }
-  
-  this.searchFunc = function(search,arg1,arg2,arg3,arg4,arg5,arg6,arg7){ // 引数7個まで
-    var libfunc = libraryCall(search,this.libraryName,7);
-    var others = libraryCall(search,"",7);    
-      if(this[search] !== undefined) {
-        return this[search](arg1,arg2,arg3,arg4,arg5,arg6,arg7);
-      }else if(libfunc !== undefined) {
-        return libfunc(this,arg1,arg2,arg3,arg4,arg5,arg6,arg7);
-      }else if(others !== undefined) {
-        return others(this,arg1,arg2,arg3,arg4,arg5,arg6,arg7);
-      };
-  }  
+    html.css = this.combinationCss();
+    html.plugins = this.plugins;
+    html.javascript = this.javascript;
+    html.jqueryIni = this.jqueryIni;
+    html.navbarHeader = this.navbarHeader
+    html.header = this.header + '</div>' + JSON.stringify(this.layout);
+    html.modalDiv = this.modalDiv;
+//    html.left = this.left + '</div>';
+    html.pageDiv = castPages(this.layout,this.pageDiv);//[{left:'page0 left',center:'page0 center',right:'page0 Right'},{left:'page1 left',center:'page1 center',right:'page1 Right'},{left:'page2 left',center:'page2 center',right:'page2 Right'}]);//JSON.stringify(this.settings.main.layout);
+//    html.body = combineArrayObject(this.pageDiv,content.pageDiv);//this.body + this.jqueryIni + '</div>';  // + JSON.stringify(this.settings.main.page);
+//    html.right = this.right + '</div>';
+    html.footer = this.footer;
+    html.navbarFooter = this.navbarFooter
     
-  this.searchParts = function(ary,key,arg1,arg2,arg3,arg4,arg5){ // ５個まで
-    var val = ""
-    for (var i = 0; i < ary.length; i++){
-      if(ary[i][key]){
-        val += this.searchFunc(ary[i][key],ary[i],i,arg1,arg2,arg3,arg4,arg5);
-      };
-    };
-    return val;
+  if(this.faviconUrl && this.title){
+    return html.evaluate().setTitle(this.title).setFaviconUrl(this.faviconUrl);
+  }else if(this.title){
+    return html.evaluate().setTitle(this.title);
+  }else if(this.faviconUrl){
+    return html.evaluate().setFaviconUrl(this.faviconUrl);
+  } else {
+    return html.evaluate();
   }
-
-  this.ifAny = function(key1,key2,val,count){
-    if(this.count[key1] === undefined && !count){
-      this.count[key1] = 1;
-      appendContent.call(this.content,key2,val);
-    } else if(this.count[key1] === undefined && count){
-      this.count[key1] = count;
-      appendContent.call(this.content,key2,val);
-    } else if(this.count[key1] !== undefined && count){
-      this.count[key1] = count;
-    } else {
-      this.count[key1] ++
-    };
   }
   
-}
-
-SuperSuzunari.prototype = Object.create(suzunariLayout.SuzunariLayout.prototype, {value: {constructor: SuperSuzunari}});
-
-function addArrayObject(target,index,key,val){  //call thisObjectはarrayObuject
-  this[target] = this[target] || [];
-  this[target][index] = this[target][index] || {};
-    if(this[target][index][key] !== undefined){
-      this[target][index][key] += val;
-    }else{
-      this[target][index][key] = val;
+  
+  this.combinationCss = function() {
+  var css = HtmlService.createHtmlOutput();
+      css.append(this.pluginCss);
+      css.append(this.css);
+  return css.getContent();
+  }
+  
+  this.addData = function(content,libraryNo){
+    for(var key in content){
+      switch (key) {
+      case 'data':
+        this.data[libraryNo] = content.data;
+      break;
+      case 'css':
+      case 'plugins':
+      case 'pluginCss':
+        this[key] += content[key];
+      break;
+      case 'javascript':
+        this.javascript += replaceTag(content.javascript);
+      break;
+      case 'jqueryIni':
+        this.jqueryIni += replaceTag(content.jqueryIni);
+      break;
+      case 'body':
+     //   this.body += bodyDiv(content.body);
+      break;
+      case 'pageDiv':
+        if(!this.pageDiv){  
+          this.pageDiv =　content.pageDiv;
+        }else{
+          this.pageDiv = combineArrayObject(this.pageDiv,content.pageDiv);
+        };
+      break;
+      default:
+        this[key] += content[key];
+      break;
+      };
     };
-}
-
-function addArrayObject2(index,key,val){  //call thisObjectはarrayObuject
-//  this = this || [];
-  this[index] = this[index] || {};
-//  this[index][key] = this[index][key] + val || val;
-    if(this[index][key] !== undefined){
-      this[index][key] += val;
-    }else{
-      this[index][key] = val;
-    };
+  };
+  this.addPage = function(i,target,val){
+    this.pageDiv[0]["left"] += val;
+   // this.pageDiv = this.pageDiv || []
+   // this.pageDiv[i][target] = this.pageDiv[i][target] || {};
+   // this.pageDiv[i][target] += val
+  }
 }
 
 function combineArrayObject(aryObj1,aryObj2){
@@ -198,9 +279,9 @@ function combineArrayObject(aryObj1,aryObj2){
     if(aryObj2[i]){
       aryObj1[i] = aryObj1[i] || {};
       for(var key in aryObj2[i]){
-        if(aryObj1[i][key] !== undefined){
+        if(aryObj1[i][key] !== undefined && aryObj2[i][key] !== undefined && aryObj2[i][key] !== 'undefined'){
           aryObj1[i][key] += aryObj2[i][key];
-        }else{
+        }else if(aryObj2[i][key] !== undefined && aryObj2[i][key] !== 'undefined'){
           aryObj1[i][key] = aryObj2[i][key];
         };
       };
@@ -209,103 +290,144 @@ function combineArrayObject(aryObj1,aryObj2){
   return aryObj1;
 }
 
-function counter(name) {
- if(this[name] !== undefined) {
- return this[name] +1
- } else {
- return 1;
- };
-}
-
-function libraryFanc(func,opt_library,opt_args) { // 第一引数が関数名、関数のあるライブラリ、引数のいくつあるか。関数がないとundefinedを返す。
-  var arg = "arg"
-  var lib ="";
-  if(opt_library) {
-  var lib = opt_library + '.'
-  }
-  if(opt_args) {
-    for (var i = 1; i < opt_args; i++){
-      arg += ",arg" + i;
+function castPages(layout,content){
+  var pages = ""
+  for (var i = 0; i < content.length; i++){
+    pages += '<div class="container-fluid v-zoom page-cng page-'+ i +'">';
+    if(layout && content){
+    if(layout[i].left && content[i].left){
+      pages += '<div' + castElement(castValue(layout[i].left)) +'>';
+        if(content[i].left){
+          pages += content[i].left;
+        }
+      pages += '</div>';
     };
-  };
-  var t = 'return typeof(' + lib  + func + ')'
-  var t2 = Function.call("",t);
-  if(t2() == 'function') {
-    var f = 'return function(' + arg + ') { return ' + lib  + func + '(' + arg + ');}';
-    return Function.call("",f)();
-  }else{
-  return undefined;
-  }
-}
-
-function libraryCall(func,opt_library,opt_args) { // 第一引数が関数名、関数のあるライブラリ、引数のいくつあるか。関数がないとundefinedを返す。
-  var arg = "thisObj,arg"
-  var lib ="";
-  if(opt_library) {
-  var lib = opt_library + '.'
-  }
-  if(opt_args) {
-    for (var i = 1; i < opt_args; i++){
-      arg += ",arg" + i;
+    if(layout[i].center && content[i].center){
+      pages += '<div' + castElement(castValue(layout[i].center)) +'>';
+        if(content[i].center){
+          pages += content[i].center;
+        }
+      pages += '</div>';
     };
+    if(layout[i].right && content[i].right){
+      pages += '<div' + castElement(castValue(layout[i].right)) +'>';
+        if(content[i].right){
+          pages += content[i].right;
+        }
+      pages += '</div>';
+    };
+    if(layout[i].hid && content[i].hid){
+      pages += '<div' + castElement(castValue(layout[i].hid)) +'>';
+        if(content[i].hid){
+          pages += content[i].hid;
+        }
+      pages += '</div>';
+    };
+    if(layout[i].modal && content[i].modal){
+      pages += '<div' + castElement(castValue(layout[i].modal)) +'>';
+        if(content[i].modal){
+          pages += content[i].modal;
+        }
+      pages += '</div>';
+    };
+    };
+  pages += '</div>'
   };
-  var t = 'return typeof(' + lib  + func + ')'
-  var t2 = Function.call("",t);
-  if(t2() == 'function') {
-    var f = 'return function(' + arg + ') { return ' + lib  + func + '.call(' + arg + ');}';
-    return Function.call("",f)();
-  }else{
-  return undefined;
-  }
+  return pages;//castElement(castValue(layout[0].center));//JSON.stringify(castElement(castValue(layout[0].center)));
 }
 
-function requestLibrary(req) {
-　　var  lib = libraryFanc("suzunariCatchRequest",castLibName(req.libName),4);
-　　return lib(req);
-}
-
-function castLibName(name){
-  if(!name || name === 'Suzunari' || name === 'suzunari') {
-    return  "";
+function castValue(val){
+  var obj = {};
+  var ary1 = [];
+  if(val !== undefined){
+　　 if (val.indexOf(',') != -1) {
+　　   ary1 = val.split(",");
+　　   for (var i = 0; i < ary1.length; i++){
+        if ( ary1[i].indexOf(':') != -1) {
+        var ary2 = [];
+        ary2 = ary1[i].split(":");
+        obj[ary2[0]] = ary2[1];
+      } else {
+      obj = ary1
+    };      
+  };
+  return obj;
+  } else if(val.indexOf(':') != -1){    
+    var ary2 = [];
+    ary2 = val.split(":");
+    obj[ary2[0]] = ary2[1];
+    return obj;
   } else {
-    return name;
-  };    
+  return val;
+  };
+  }
 }
 
-function getUserId(){
-  return Session.getActiveUser().getUserLoginId();
-}
-
-function getUserEmail(){
-  return Session.getActiveUser().getEmail();
-}
-
-function orInsert(obj,key,val){
-  if(key && val){
+function addArrayObject2(index,key,val){  //call thisObjectはarrayObuject
+ // this[index] = this[index] || {};
+//  if(this[index] !== undefined){
+//    this[index] = {}
+//  };
     if(this[key] !== undefined){
       this[key] += val;
-    } else {
+    }else{
       this[key] = val;
-    }
-  } else {
-    if(obj){
-      for(var key1 in obj){
-        if(this[key1] !== undefined){
-          this[key1] += obj[key1];
-        } else {
-          this[key1] = obj[key1];
-        };  
-      };
     };
-  };
 }
 
-function appendContent(key,val){
-  if(this[key] !== undefined){
-    this[key] += val;
-  } else {
-    this[key] = val;
+
+function castElement(elm){
+    var element = ""
+    for(var key in elm){
+        element += " " + key + '="' + elm[key] + '"';
+     }
+    return element;
   }
+
+
+function replaceTag(val){
+  var ret = val.replace( /'<script>'/g , "" );
+  ret = ret.replace( /'<\/script>'/g , "" );
+  ret = ret.replace( /'<script\/>'/g , "" );
+  return ret;
+}
+
+function bodyDiv(val) {
+  var div = '<div>';
+      div += val;
+      div += '</div>';
+  return div;
+}
+
+function castLayout(list){
+  var obj = {};
+  var ary1 = [];
+    for (var i = 0; i < list.length; i++){
+      if(list[i]){
+        var ary2 = list[i].split(",");
+        var obj2 = {};
+          for (var j = 0; j < ary2.length; j++){
+            var ary3 = ary2[j].split(":");
+            obj2[ary3[0]] = ary3[1];
+            var ary4 = ary3[1].split("&");
+              for (var k = 0; k < ary4.length; k++){
+                if(obj[ary4[k]] === undefined){
+                  obj[ary4[k]] = {};
+                  obj[ary4[k]][ary3[0]] = [i];
+                } else if(obj[ary4[k]][ary3[0]] === undefined){
+                  obj[ary4[k]][ary3[0]] = [i];
+                }else{
+                  obj[ary4[k]][ary3[0]].push(i);
+                };
+              };
+          };
+        ary1[i] = obj2;  
+      };
+    };
+    var obj3 = {};
+    obj3['layout'] = ary1;
+    obj3['pages'] = obj;
+  return obj3;      
 }
 
 function libraryOutputFromFile(name) {
