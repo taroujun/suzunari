@@ -25,27 +25,61 @@
  }
 
   function jointOnJoint(obj,row,val,aug,jsonData,settings,obj_callback){
-        if(row[settings.linkField.nextJoint] && obj[row[settings.linkField.nextJoint]] && !row[settings.linkField.augment].escape){
-            val = jointOnJoint.call(this,obj,obj[row[settings.linkField.nextJoint]],val,obj[row[settings.linkField.nextJoint]][settings.linkField.augment],obj[row[settings.linkField.nextJoint]][settings.linkField.jsonData],settings,obj_callback);
-        }
-            if(obj_callback){
-                for(var key in obj_callback){
-                    obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
-                }
-          }              
-    return searchFunc.call(this,row[settings.linkField.func],row[settings.linkField.library],settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
+      if(obj_callback){
+          for(var key in obj_callback){
+              obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+          }
+      }              
+      if(row[settings.linkField.nextJoint] && obj[row[settings.linkField.nextJoint]]){
+          if(row[settings.linkField.augment].escape || row[settings.linkField.nextJoint].length > 2 || obj[row[settings.linkField.nextJoint] + "-0"]){
+              val = searchFunc.call(this,obj[row[settings.linkField.nextJoint]][settings.linkField.func],obj[row[settings.linkField.nextJoint]][settings.linkField.library],settings.thisLibrary,obj,obj[row[settings.linkField.nextJoint][0]],undefined,obj[row[settings.linkField.nextJoint][0]][settings.linkField.augment],obj[row[settings.linkField.nextJoint][0]][settings.linkField.jsonData],settings,obj_callback);
+              return searchFunc.call(this,row[settings.linkField.func],row[settings.linkField.library],settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
+          }else{
+              val = jointOnJoint.call(this,obj,obj[row[settings.linkField.nextJoint][0]],val,obj[row[settings.linkField.nextJoint][0]][settings.linkField.augment],obj[row[settings.linkField.nextJoint][0]][settings.linkField.jsonData],settings,obj_callback);
+              return searchFunc.call(this,row[settings.linkField.func],row[settings.linkField.library],settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
+          }
+      }else{
+          return searchFunc.call(this,row[settings.linkField.func],row[settings.linkField.library],settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
+      }
+  }
+  
+  function ougKeyJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+      for (var i = 0; i < row[settings.linkField.nextJoint].length; i++){
+          var val2 = val2 || {};
+          val2[obj[row[settings.linkField.nextJoint][i]][settings.linkField.augment].key] = jointOnJoint.call(this,obj,obj[row[settings.linkField.nextJoint][i]],val,obj[row[settings.linkField.nextJoint][i]][settings.linkField.augment],obj[row[settings.linkField.nextJoint][i]][settings.linkField.jsonData],settings,obj_callback);
+      }
+    return val2;
+  }
+  
+  function margeJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+      for (var i = 0; i < row[settings.linkField.nextJoint].length; i++){
+          var val2 = val2 || {};
+          val2 = marge(val2,jointOnJoint.call(this,obj,obj[row[settings.linkField.nextJoint][i]],val,obj[row[settings.linkField.nextJoint][i]][settings.linkField.augment],obj[row[settings.linkField.nextJoint][i]][settings.linkField.jsonData],settings,obj_callback));
+      }
+      if(isObject(val)){
+          val2 = marge(val2,val)
+      }
+    return val2;
+  }
+  
+  function arrayReturnJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+      for (var i = 0; i < row[settings.linkField.nextJoint].length; i++){
+          var val2 = val2 || [];
+          val2.push(jointOnJoint.call(this,obj,obj[row[settings.linkField.nextJoint][i]],val,obj[row[settings.linkField.nextJoint][i]][settings.linkField.augment],obj[row[settings.linkField.nextJoint][i]][settings.linkField.jsonData],settings,obj_callback));
+      }
+    return val2;
   }
   
   function setLayout(obj,row,val,aug,jsonData,settings,obj_callback){
     var thisObj = new suzunariLayout.SuzunariContener(val);
-    var test3 = obj[row[settings.linkField.nextJoint]][settings.linkField.augment];
+    var test3 = obj[row[settings.linkField.nextJoint][0]][settings.linkField.augment];
  //   obj_callback.test = testJoint2;
     var tes =jointOnJoint.call(thisObj,obj,row,val,aug,jsonData,settings,obj_callback);
     var testAry = {};
  //   var param = JSON.parse(e.parameter.jointData)
     testAry.pageDiv = []
-    testAry.pageDiv.push({"left":JSON.stringify(test3)});//+JSON.stringify(ary)+jsondata.field.indexOf(jsondata.linkField.jointName)});
-    testAry.pageDiv.push({"left":"test"});
+//    testAry.pageDiv.push({"left":JSON.stringify(test3)});//+JSON.stringify(ary)+jsondata.field.indexOf(jsondata.linkField.jointName)});
+//    testAry.pageDiv.push({"left":"test"});
     var test = {};
     test.pageDiv = testAry;
     thisObj.addData(testAry);
@@ -53,7 +87,11 @@
   }
   
   function addPropertyJoint(obj,row,val,aug,jsonData,settings,obj_callback){
-    this[aug.target] = val;
+        if(this[aug.target]){
+            this[aug.target] += val;
+        }else{
+            this[aug.target] = val;
+        }
   }
   
   function addPageDiv(obj,row,val,aug,jsonData,settings,obj_callback){
@@ -68,8 +106,9 @@
   function jsonDataJoint(obj,row,val,aug,jsonData,settings,obj_callback){
     return jsonData;
   }
+  
 
-  function margeJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+  function margeListJoint(obj,row,val,aug,jsonData,settings,obj_callback){//<<<<<
     var i = 0;
         while(obj[row[settings.linkField.jointName] + "-" + i] !== undefined){
         var obj1 = obj1 || {};
@@ -84,7 +123,7 @@
     return obj1;
  }
 
-  function arrayJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+  function listJoint(obj,row,val,aug,jsonData,settings,obj_callback){//<<<
     var i = 0;
         while(obj[row[settings.linkField.jointName] + "-" + i] !== undefined){
         var ary = ary || [];
@@ -99,32 +138,82 @@
     return ary;
  }
  
+  function joinListJoint(obj,row,val,aug,jsonData,settings,obj_callback){//<<<<<
+    var i = 0;
+        while(obj[row[settings.linkField.jointName] + "-" + i] !== undefined){
+        var val1 = val1 || "";
+        val1 += jointOnJoint.call(this,obj,obj[row[settings.linkField.jointName] + "-" + i],val,obj[row[settings.linkField.jointName] + "-" + i][settings.linkField.augment],obj[row[settings.linkField.jointName] + "-" + i][settings.linkField.jsonData],settings,obj_callback);
+        i++;
+            if(obj_callback){
+                for(var key in obj_callback){
+                    obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+                }
+            }
+        }
+        if(aug.key){
+            var obj1 ={};
+            obj1[aug.key] = val1;
+            return obj1;
+        }else{
+            return val1;
+        }
+ }
+
   function jsonStringifyJoint(obj,row,val,aug,jsonData,settings,obj_callback){
     return JSON.stringify(val);
   }
 
   function liblaryTemplateFromFileJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+    var re = jsonData.replaceData || {}
+        if(isObject(val)){
+            re = marge(re,val)
+        }
     var html = HtmlService.createTemplateFromFile(aug.fileName);
-        for(var key in jsonData){
-           html[key] = jsonData[key]
+        for(var key in re){
+           html[key] = re[key]
         }
     return html.evaluate().getContent();
   }
-    
-  function combineDataJoint(obj,obj1,data,ary,nextVal){//<<
-    this[obj1.augment.target] = combineArrayObject(this[obj1.augment.target],data);
-  }
   
-  function jointOnJointOnjoint(obj,obj1,data,ary,nextVal){//<<
-    return jointOnJoint.call(this,obj,obj1.argAry);
-  }
-  
-  function singleJoint(obj,obj1,data,ary,nextVal){//<<
-    return nextVal;
+  function replaceTemplateFromJsonJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+    var re = jsonData.replaceData || {}
+        if(isObject(val)){
+            re = marge(re,val)
+        }
+        for(var key in jsonData){
+            if(this[key] !== undefined && this[key]){
+                this[key] += replaceTemplateTag(jsonData[key],re);
+            }else if(this[key] !== undefined && !this[key]){
+                this[key] = replaceTemplateTag(jsonData[key],re);
+            }
+        }
+        if(aug.key){
+            var obj1 = {}
+            obj1[aug.key] = replaceTemplateTag(jsonData.textContent,re);
+            return obj1
+        }else{
+            return replaceTemplateTag(jsonData.textContent,re);
+        }
   }
 
-  function joinInJoint(obj,obj1,data,ary,nextVal){//<<
-    return Array.prototype.join.apply(ary,obj1.augment.argAry);
+  function combineNextJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+    this[aug.target] = combineArrayObject(this[aug.target],val);
+  }
+  
+  function combineJsonJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+    this[aug.target] = combineArrayObject(this[aug.target],jsonData);
+  }
+
+  function combineJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+    this[aug.target] = combineArrayObject(this[aug.target],combineArrayObject(val,jsonData));
+  }
+    
+  function singleJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+    return val;
+  }
+
+  function joinInJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+    return Array.prototype.join.apply(val,aug.augAry);
   }
 
   function libraryApply(func,opt_library) { // 関数が有れば関数を、なければ　undefined　を返す。
@@ -132,7 +221,6 @@
         var t = Function.call("",'return typeof(' + lib  + func + ')');
             if(t() == 'function') {
                var f = 'return function(args) { return ' + lib  + func + '.apply(this,args);}';
-        //     var f = 'return ' + lib  + func + '.apply(this,ary)';
                return Function.call("",f)();
            }else{
                return undefined;
@@ -215,6 +303,18 @@
         }
     return obj1;
   }
+  
+  function replaceTemplateTag(text,obj){
+      for(var key in obj){
+          var re = new RegExp("<\\?=? *(" + key + "|this." + key + ") *\\?>","g");
+          text = text.replace(re,obj[key]);
+      }
+    return text;
+  }
+  
+  var isObject = function(o) {
+      return (o instanceof Object && !(o instanceof Array)) ? true : false;
+  };
 
   function getUserId(){
     return Session.getActiveUser().getUserLoginId();
