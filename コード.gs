@@ -18,7 +18,7 @@
    var obj1 = JSON.parse(e.parameter.jointData);
    var jsonData = obj1.jsonData;  // <<<<<<<< 固定？
    var ary = loadSpreadSheet(jsonData.spredSheetID,jsonData.sheetName,jsonData.offset)
-   var obj = getJointTable(ary,jsonData.field,jsonData.jsonField,jsonData.field.indexOf(jsonData.linkField.jointName));
+   var obj = getJointTable(ary,jsonData.field,jsonData.jsonField,jsonData.linkField,jsonData.field.indexOf(jsonData.linkField.jointName));
    var next = obj[obj1[jsonData.linkField.nextJoint]];
    var obj_callback = {};
    return searchFunc.call(e,obj1[jsonData.linkField.func],obj1[jsonData.linkField.library],jsonData.thisLibrary,obj,next,e,next[jsonData.linkField.augment],next[jsonData.linkField.jsonData],jsonData,obj_callback);
@@ -30,7 +30,7 @@
               obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
           }
       }              
-      if(row[settings.linkField.nextJoint] && obj[row[settings.linkField.nextJoint]]){
+      if(row.nextJoint && obj[row.nextJoint[0]]){
           if(row[settings.linkField.augment].escape || row[settings.linkField.nextJoint].length > 2 || obj[row[settings.linkField.nextJoint] + "-0"]){
               val = searchFunc.call(this,obj[row[settings.linkField.nextJoint]][settings.linkField.func],obj[row[settings.linkField.nextJoint]][settings.linkField.library],settings.thisLibrary,obj,obj[row[settings.linkField.nextJoint][0]],undefined,obj[row[settings.linkField.nextJoint][0]][settings.linkField.augment],obj[row[settings.linkField.nextJoint][0]][settings.linkField.jsonData],settings,obj_callback);
               return searchFunc.call(this,row[settings.linkField.func],row[settings.linkField.library],settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
@@ -268,8 +268,15 @@
         }
   }
 
-  function getJointTable(ary,keys,jsonKeys,keyIndex){
+  function getJointTable(ary,keys,jsonKeys,linkField,keyIndex){
     var obj ={};
+        for (var i = 0; i < keys.length; i++){//<<<<<<< 
+            for(var key in linkField){
+                if(keys[i] == linkField[key]){
+                    keys[i] = key;
+                }
+            }
+        }
         for (var i = 0; i < ary.length; i++){
             for (var j = 0; j < ary[i].length; j++){
                 if(jsonKeys.indexOf(keys[j]) >= 0 ){
