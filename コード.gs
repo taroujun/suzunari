@@ -30,23 +30,87 @@
               obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
           }
       }              
-      if(row.nextJoint && obj[row.nextJoint[0]]){
-          if(row[settings.linkField.augment].escape || row[settings.linkField.nextJoint].length > 2 || obj[row[settings.linkField.nextJoint] + "-0"]){
-              val = searchFunc.call(this,obj[row[settings.linkField.nextJoint]][settings.linkField.func],obj[row[settings.linkField.nextJoint]][settings.linkField.library],settings.thisLibrary,obj,obj[row[settings.linkField.nextJoint][0]],undefined,obj[row[settings.linkField.nextJoint][0]][settings.linkField.augment],obj[row[settings.linkField.nextJoint][0]][settings.linkField.jsonData],settings,obj_callback);
-              return searchFunc.call(this,row[settings.linkField.func],row[settings.linkField.library],settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
+      if(row.nextJoint && obj[row.nextJoint]){
+          if(row.augment.escape || row.nextJoint.length > 2 || obj[row.nextJoint + "-0"]){
+              val = searchFunc.call(this,obj[row.nextJoint[0]].func,obj[row.nextJoint[0]].library,settings.thisLibrary,obj,obj[row.nextJoint[0]],undefined,obj[row.nextJoint[0]].augment,obj[row.nextJoint[0]].jsonData,settings,obj_callback);
+              return searchFunc.call(this,row.func,row.library,settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
           }else{
-              val = jointOnJoint.call(this,obj,obj[row[settings.linkField.nextJoint][0]],val,obj[row[settings.linkField.nextJoint][0]][settings.linkField.augment],obj[row[settings.linkField.nextJoint][0]][settings.linkField.jsonData],settings,obj_callback);
-              return searchFunc.call(this,row[settings.linkField.func],row[settings.linkField.library],settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
+              val = jointOnJoint.call(this,obj,obj[row.nextJoint[0]],val,obj[row.nextJoint[0]].augment,obj[row.nextJoint[0]].jsonData,settings,obj_callback);
+              return searchFunc.call(this,row.func,row.library,settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
           }
       }else{
-          return searchFunc.call(this,row[settings.linkField.func],row[settings.linkField.library],settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
+          return searchFunc.call(this,row.func,row.library,settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
       }
+  }
+  
+  function jointTest(obj,row,val,aug,jsonData,settings,obj_callback){
+    var obj2 = new Joint(obj,obj["suzunari"],settings,obj_callback);
+    obj2.next();
+  //  obj2.next();
+ //   obj2.rewind();
+    return [obj2.prev,obj2.current,obj2.next(),obj2.isMultiple(),obj2.funcAry("")[0]];
+  }
+  
+  function Joint(obj,root,settings,obj_callback){
+    this.obj = obj
+    this.settings = settings
+    this.obj_callback = obj_callback
+    this.root = root
+    this.Prev = root
+    this.current = root
+    this.nextJoint = this.current.nextJoint
+    this.index = 0
+    this.length = this.current.nextJoint.length
+    this.next = function(){
+        if(this.hasNext()){
+        this.prev = this.current
+        this.current = this.obj[this.current.nextJoint[0]]
+        this.index = 0
+        this.length = this.current.nextJoint.length
+        return this.current
+        }else{
+            return "done"
+        }
+    }
+    this.increment = function(){
+        this.index ++
+        return this.obj[this.current.nextJoint[index]]
+    }
+    this.decrement = function(){
+        this.index --
+        return this.obj[this.current.nextJoint[index]]
+    }
+    this.hasNext = function(){
+        return this.obj[this.current.nextJoint[0]] && this.current.nextJoint
+    }
+    this.rewind = function(){
+        this.current = this.root
+        this.index = 0
+        this.length = this.root.nextJoint.length
+    }
+    this.isMultiple = function(){
+        return this.length > 2 || this.obj[this.current.nextJoint + "-0"] || this.current.augment.multiple       
+    }
+    this.multiAug = function(){
+        return [obj[this.current.nextJoint[0]].func,obj[this.current.nextJoint[0]].library,this.settings.thisLibrary,this,obj[this.current.nextJoint[0]],undefined,obj[this.current.nextJoint[0]].augment,obj[this.current.nextJoint[0]].jsonData,this.settings,this.obj_callback]
+    }
+    this.singleAug = function(val){
+        return [this,obj[this.current.nextJoint[0]],val,obj[this.current.nextJoint[0]].augment,obj[this.current.nextJoint[0]],this.current.jsonData,this.settings,this.obj_callback]
+    }
+    this.funcAug = function(val){
+        return [this.current.func,this.current.library,this.settings.thisLibrary,this,this.current,val,this.current.augment,this.current.jsonData,this.settings,this.obj_callback]
+    }
+    this.each = function(callback){
+        for (var i = 0; i < this.length; i++){
+            callback.apply(this,"")
+        }
+    }
   }
   
   function ougKeyJoint(obj,row,val,aug,jsonData,settings,obj_callback){
       for (var i = 0; i < row[settings.linkField.nextJoint].length; i++){
           var val2 = val2 || {};
-          val2[obj[row[settings.linkField.nextJoint][i]][settings.linkField.augment].key] = jointOnJoint.call(this,obj,obj[row[settings.linkField.nextJoint][i]],val,obj[row[settings.linkField.nextJoint][i]][settings.linkField.augment],obj[row[settings.linkField.nextJoint][i]][settings.linkField.jsonData],settings,obj_callback);
+          val2[obj[row.nextJoint[i]].augment.key] = jointOnJoint.call(this,obj,obj[row.nextJoint[i]],val,obj[row.nextJoint[i]].augment,obj[row.nextJoint[i]].jsonData,settings,obj_callback);
       }
     return val2;
   }
@@ -54,7 +118,7 @@
   function margeJoint(obj,row,val,aug,jsonData,settings,obj_callback){
       for (var i = 0; i < row[settings.linkField.nextJoint].length; i++){
           var val2 = val2 || {};
-          val2 = marge(val2,jointOnJoint.call(this,obj,obj[row[settings.linkField.nextJoint][i]],val,obj[row[settings.linkField.nextJoint][i]][settings.linkField.augment],obj[row[settings.linkField.nextJoint][i]][settings.linkField.jsonData],settings,obj_callback));
+          val2 = marge(val2,jointOnJoint.call(this,obj,obj[row.nextJoint[i]],val,obj[row.nextJoint[i]].augment,obj[row.nextJoint[i]].jsonData,settings,obj_callback));
       }
       if(isObject(val)){
           val2 = marge(val2,val)
@@ -65,7 +129,7 @@
   function arrayReturnJoint(obj,row,val,aug,jsonData,settings,obj_callback){
       for (var i = 0; i < row[settings.linkField.nextJoint].length; i++){
           var val2 = val2 || [];
-          val2.push(jointOnJoint.call(this,obj,obj[row[settings.linkField.nextJoint][i]],val,obj[row[settings.linkField.nextJoint][i]][settings.linkField.augment],obj[row[settings.linkField.nextJoint][i]][settings.linkField.jsonData],settings,obj_callback));
+          val2.push(jointOnJoint.call(this,obj,obj[row.nextJoint[i]],val,obj[row.nextJoint[i]].augment,obj[row.nextJoint[i]].jsonData,settings,obj_callback));
       }
     return val2;
   }
