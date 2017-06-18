@@ -32,14 +32,14 @@
       }              
       if(row.nextJoint && obj[row.nextJoint[0]]){
           if(row[settings.linkField.augment].escape || row[settings.linkField.nextJoint].length > 2 || obj[row[settings.linkField.nextJoint] + "-0"]){
-              val = searchFunc.call(this,obj[row[settings.linkField.nextJoint]][settings.linkField.func],obj[row[settings.linkField.nextJoint]][settings.linkField.library],settings.thisLibrary,obj,obj[row[settings.linkField.nextJoint][0]],undefined,obj[row[settings.linkField.nextJoint][0]][settings.linkField.augment],obj[row[settings.linkField.nextJoint][0]][settings.linkField.jsonData],settings,obj_callback);
-              return searchFunc.call(this,row[settings.linkField.func],row[settings.linkField.library],settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
+              val = searchFunc.call(this,obj[row.nextJoint[0]].func,obj[row.nextJoint[0]].library,settings.thisLibrary,obj,obj[row.nextJoint[0]],undefined,obj[row.nextJoint[0]].augment,obj[row.nextJoint[0]].jsonData,settings,obj_callback);
+              return searchFunc.call(this,row.func,row.library,settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
           }else{
-              val = jointOnJoint.call(this,obj,obj[row[settings.linkField.nextJoint][0]],val,obj[row[settings.linkField.nextJoint][0]][settings.linkField.augment],obj[row[settings.linkField.nextJoint][0]][settings.linkField.jsonData],settings,obj_callback);
-              return searchFunc.call(this,row[settings.linkField.func],row[settings.linkField.library],settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
+              val = jointOnJoint.call(this,obj,obj[row.nextJoint[0]],val,obj[row.nextJoint[0]].augment,obj[row.nextJoint[0]].jsonData,settings,obj_callback);
+              return searchFunc.call(this,row.func,row.library,settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
           }
       }else{
-          return searchFunc.call(this,row[settings.linkField.func],row[settings.linkField.library],settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
+          return searchFunc.call(this,row.func,row.library,settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
       }
   }
   
