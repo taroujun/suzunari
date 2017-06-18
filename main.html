@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<html>
+<head>
+
+  <meta charset="UTF-8">
+
+    
+  <? output.append(this.css); ?>
+  
+  <? output.append(this.plugins); ?>
+  
+  <script>
+
+  var json = <?= settings ?>;
+  var settings = $.parseJSON(json);
+  var jsonData = <?= data ?>;
+  var data = $.parseJSON(jsonData);
+  
+  <? output.append(this.javascript); ?>
+  
+  </script>
+  
+  <script>
+  
+  function initializeJquery(settings,data) {
+  
+  <? output.append(this.jqueryIni); ?>
+    
+  }
+  
+  </script>
+    
+</head>
+<body>         
+  <div class="container-fluid p0m0">
+    <nav class="navbar navbar-fixed-top">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand navbar-lg"></a>
+          <button type="button" class="navbar-toggle collapsed"data-toggle="collapse"data-target="#navbarHeader">
+            <span class="sr-only">Toggle navigation</span>
+    		<span class="icon-bar"></span>
+    		<span class="icon-bar"></span>
+    		<span class="icon-bar"></span>
+          </button>
+        </div>		
+        <div class="collapse navbar-collapse" id="navbarHeader">
+           <? output.append(this.navbarHeader); ?>
+        </div>
+      </div>
+    </nav>
+    <div class="row p0m0">
+      <? output.append(this.header); ?>         <!--/.header-area-->
+    </div>
+      <div class="row p0m0">
+          <? output.append(this.content); ?> <!--/.content-area-->
+      </div>
+    </div>
+          <? output.append(this.modal); ?>      <!--/.modal-area-->
+         <footer class="footer">
+          <div class="container-fluid p0m0">
+             <? output.append(this.footer); ?>  <!--/.footer-area-->
+          </div>
+        </footer>
+        <br><br>
+   <nav class="navbar navbar-fixed-bottom">
+      <div class="container-fluid">
+        <div class="navbar-header">
+          <a class="navbar-brand navbar-lg"></a>
+          <button type="button" class="navbar-toggle collapsed"data-toggle="collapse"data-target="#navbarFooter">
+            <span class="sr-only">Toggle navigation</span>
+    		<span class="icon-bar"></span>
+    		<span class="icon-bar"></span>
+    		<span class="icon-bar"></span>
+          </button>
+        </div>		
+        <div class="collapse navbar-collapse" id="navbarFooter">
+          <? output.append(this.navbarFooter); ?>
+        </div>
+      </div>
+    </nav>
+    
+ <script>
+  $(function() {
+  
+  var json = <?= settings ?>;
+  var settings = $.parseJSON(json);
+  var jsonData = <?= data ?>;
+  var data = $.parseJSON(jsonData);
+
+  initializeJquery(settings,data);
+  
+    });
+</script>
+
+</body>
+</html>

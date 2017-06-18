@@ -21,7 +21,8 @@
    var obj = getJointTable(ary,jsonData.field,jsonData.jsonField,jsonData.linkField,jsonData.field.indexOf(jsonData.linkField.jointName));
    var next = obj[obj1[jsonData.linkField.nextJoint]];
    var obj_callback = {};
-   return searchFunc.call(e,obj1[jsonData.linkField.func],obj1[jsonData.linkField.library],jsonData.thisLibrary,obj,next,e,next[jsonData.linkField.augment],next[jsonData.linkField.jsonData],jsonData,obj_callback);
+   return jointOnJoint.call(e,obj,next,e,next[jsonData.linkField.augment],next[jsonData.linkField.jsonData],jsonData,obj_callback);
+  // return searchFunc.call(e,obj1[jsonData.linkField.func],obj1[jsonData.linkField.library],jsonData.thisLibrary,obj,next,e,next[jsonData.linkField.augment],next[jsonData.linkField.jsonData],jsonData,obj_callback);
  }
 
   function jointOnJoint(obj,row,val,aug,jsonData,settings,obj_callback){
@@ -50,7 +51,21 @@
       }
     return val2;
   }
-  
+  function loadJointTableJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+    var ary = loadSpreadSheet(jsonData.spredSheetID,jsonData.sheetName,jsonData.offset)
+    var obj2 = getJointTable(ary,jsonData.field,jsonData.jsonField,jsonData.linkField,jsonData.field.indexOf(jsonData.linkField.jointName));
+    return jointOnJoint.call(this,obj2,row,val,aug,jsonData,settings,obj_callback);
+  }  
+  function setThisObj(obj,row,val,aug,jsonData,settings,obj_callback){
+    var thisObj = searchFunc.call(this,jsonData.func,jsonData.library,settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
+          if(row.nextJoint && obj[row.nextJoint[0]]){
+            jointOnJoint.call(thisObj,obj,obj[row.nextJoint[0]],val,obj[row.nextJoint[0]].augment,obj[row.nextJoint[0]].jsonData,settings,obj_callback);
+          }
+    return thisObj;
+  }
+  function setContainer(obj,row,val,aug,jsonData,settings,obj_callback){
+    return new SuzunariContainer(this)
+  }
   function margeJoint(obj,row,val,aug,jsonData,settings,obj_callback){
       for (var i = 0; i < row[settings.linkField.nextJoint].length; i++){
           var val2 = val2 || {};
@@ -72,17 +87,7 @@
   
   function setLayout(obj,row,val,aug,jsonData,settings,obj_callback){
     var thisObj = new suzunariLayout.SuzunariContener(val);
-    var test3 = obj[row[settings.linkField.nextJoint][0]][settings.linkField.augment];
- //   obj_callback.test = testJoint2;
-    var tes =jointOnJoint.call(thisObj,obj,row,val,aug,jsonData,settings,obj_callback);
-    var testAry = {};
- //   var param = JSON.parse(e.parameter.jointData)
-    testAry.pageDiv = []
-//    testAry.pageDiv.push({"left":JSON.stringify(test3)});//+JSON.stringify(ary)+jsondata.field.indexOf(jsondata.linkField.jointName)});
-//    testAry.pageDiv.push({"left":"test"});
-    var test = {};
-    test.pageDiv = testAry;
-    thisObj.addData(testAry);
+    jointOnJoint.call(thisObj,obj,row,val,aug,jsonData,settings,obj_callback);
     return thisObj;
   }
   
@@ -330,3 +335,58 @@
   function getUserEmail(){
     return Session.getActiveUser().getEmail();
   }
+function SuzunariContainer(parameter){
+
+  // contens 
+  
+  this.parameter = parameter;  
+  this.title = "suzunari";
+  this.faviconUrl = "https://dl.dropboxusercontent.com/s/5ksh84yv74revaa/Suzunari.ico";
+  this.settings = {};
+  this.data = [];
+  
+  this.css = ""
+  this.plugins = ""
+  this.pluginCss = ""
+  this.javascript = ""
+  this.jqueryIni = ""
+  
+  this.navbarHeader = "";
+  this.header = '<br><br><br><div class="header">';
+  this.content = "";
+  this.modal = "";
+  this.footer = "<small><a href='#'>Copyright (C) Suzunari since 2017 made japan.</a></small><br>";
+  this.navbarFooter = "";
+  
+// function
+  
+  this.evaluate = function() {
+    var html = HtmlService.createTemplateFromFile('main');
+  
+    html.settings = JSON.stringify(this.settings);
+    html.data = JSON.stringify(this.data);
+
+    html.css = this.css;
+    html.plugins = this.plugins;
+    html.javascript = this.javascript;
+    html.jqueryIni = this.jqueryIni;
+    
+    html.navbarHeader = this.navbarHeader
+    html.header = this.header + "</div>";
+    html.modal = this.modal;
+    html.content = this.content;   
+    html.footer = this.footer;
+    html.navbarFooter = this.navbarFooter
+    
+  if(this.faviconUrl && this.title){
+    return html.evaluate().setTitle(this.title).setFaviconUrl(this.faviconUrl);
+  }else if(this.title){
+    return html.evaluate().setTitle(this.title);
+  }else if(this.faviconUrl){
+    return html.evaluate().setFaviconUrl(this.faviconUrl);
+  } else {
+    return html.evaluate();
+  }
+  }
+  
+}
