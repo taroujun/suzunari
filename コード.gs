@@ -19,25 +19,29 @@
    var obj = getJointTable(ary,jsonData.field,jsonData.jsonField,jsonData.linkField,jsonData.field.indexOf(jsonData.linkField.jointName));
    var next = obj[obj1[jsonData.linkField.nextJoint]];
    var obj_callback = {};
-   return searchFunc.call(e,obj1[jsonData.linkField.func],obj1[jsonData.linkField.library],jsonData.thisLibrary,obj,next,e,next[jsonData.linkField.augment],next[jsonData.linkField.jsonData],jsonData,obj_callback);
+   return searchFunc.call(e,obj1[jsonData.linkField.func],obj1[jsonData.linkField.library],jsonData.thisLibrary,obj,obj1,e,obj1[jsonData.linkField.augment],obj1[jsonData.linkField.jsonData],jsonData,obj_callback);
  }
 
   function jointOnJoint(obj,row,val,aug,jsonData,settings,obj_callback){
       if(obj_callback){
           for(var key in obj_callback){
-              obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+           //   obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
           }
       }              
       if(obj.hasNext()){
       obj.next();
-          if(obj.isMultiple){
+          if(obj.isMultiple()){
+      this.header += obj.current.func
               val = searchFunc.apply(this,obj.multiAug());
               return searchFunc.apply(this,obj.funcAug(val));
           }else{
-              val = jointOnJoint.call(this,obj.singleAug(val));
+     this.header += obj.current.func
+              val = jointOnJoint.apply(this,obj.singleAug(val));
               return searchFunc.apply(this,obj.funcAug(val));
           }
       }else{
+      obj.next()
+      this.header += obj.current.func
           searchFunc.apply(this,obj.funcAug(val));
       }
   }
@@ -55,15 +59,16 @@
     this.settings = settings
     this.obj_callback = obj_callback
     this.root = root
-    this.Prev = root
+    this.prev = root
     this.current = root
-    this.nextJoint = this.current.nextJoint
+    this.nextJoint = this.obj[root.nextJoint[0]]
     this.index = 0
     this.length = this.current.nextJoint.length
     this.next = function(){
         if(this.hasNext()){
         this.prev = this.current
-        this.current = this.obj[this.current.nextJoint[0]]
+        this.current = this.nextJoint
+        this.nextJoint = this.obj[this.nextJoint.nextJoint[0]]
         this.index = 0
         this.length = this.current.nextJoint.length
         return this.current
@@ -80,7 +85,7 @@
         return this.obj[this.current.nextJoint[index]]
     }
     this.hasNext = function(){
-        return this.obj[this.current.nextJoint[0]] && this.current.nextJoint
+        return this.obj[this.nextJoint.nextJoint[0]] && this.nextJoint.nextJoint
     }
     this.rewind = function(){
         this.current = this.root
@@ -88,13 +93,13 @@
         this.length = this.root.nextJoint.length
     }
     this.isMultiple = function(){
-        return this.length > 2 || this.obj[this.current.nextJoint + "-0"] || this.current.augment.multiple       
+        return this.nextJoint.length > 2 || this.obj[this.nextJoint.nextJoint + "-0"] || this.nextJoint.augment.multiple       
     }
     this.multiAug = function(){
-        return [obj[this.current.nextJoint[0]].func,obj[this.current.nextJoint[0]].library,this.settings.thisLibrary,this,obj[this.current.nextJoint[0]],undefined,obj[this.current.nextJoint[0]].augment,obj[this.current.nextJoint[0]].jsonData,this.settings,this.obj_callback]
+        return [this.obj[this.current.nextJoint[0]].func,this.obj[this.current.nextJoint[0]].library,this.settings.thisLibrary,this,this.obj[this.current.nextJoint[0]],undefined,this.obj[this.current.nextJoint[0]].augment,this.obj[this.current.nextJoint[0]].jsonData,this.settings,this.obj_callback]
     }
     this.singleAug = function(val){
-        return [this,obj[this.current.nextJoint[0]],val,obj[this.current.nextJoint[0]].augment,obj[this.current.nextJoint[0]],this.current.jsonData,this.settings,this.obj_callback]
+        return [this,this.obj[this.current.nextJoint[0]],val,this.obj[this.current.nextJoint[0]].augment,this.obj[this.current.nextJoint[0]],this.current.jsonData,this.settings,this.obj_callback]
     }
     this.funcAug = function(val){
         return [this.current.func,this.current.library,this.settings.thisLibrary,this,this.current,val,this.current.augment,this.current.jsonData,this.settings,this.obj_callback]
@@ -137,6 +142,7 @@
     var thisObj = new suzunariLayout.SuzunariContener(val);
     var test3 = obj[row[settings.linkField.nextJoint][0]][settings.linkField.augment];
     var joints = new Joints(obj,row,settings,obj_callback);
+    thisObj.header += joints.isMultiple() //JSON.stringify(row)
  //   obj_callback.test = testJoint2;
     var tes =jointOnJoint.call(thisObj,joints,row,val,aug,jsonData,settings,obj_callback);
     var testAry = {};
