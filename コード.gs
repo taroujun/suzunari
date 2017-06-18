@@ -46,7 +46,7 @@
   function ougKeyJoint(obj,row,val,aug,jsonData,settings,obj_callback){
       for (var i = 0; i < row[settings.linkField.nextJoint].length; i++){
           var val2 = val2 || {};
-          val2[obj[row[settings.linkField.nextJoint][i]][settings.linkField.augment].key] = jointOnJoint.call(this,obj,obj[row[settings.linkField.nextJoint][i]],val,obj[row[settings.linkField.nextJoint][i]][settings.linkField.augment],obj[row[settings.linkField.nextJoint][i]][settings.linkField.jsonData],settings,obj_callback);
+          val2[obj[row.nextJoint[i]].augment.key] = jointOnJoint.call(this,obj,obj[row.nextJoint[i]],val,obj[row.nextJoint[i]].augment,obj[row.nextJoint[i]].jsonData,settings,obj_callback);
       }
     return val2;
   }
@@ -54,7 +54,7 @@
   function margeJoint(obj,row,val,aug,jsonData,settings,obj_callback){
       for (var i = 0; i < row[settings.linkField.nextJoint].length; i++){
           var val2 = val2 || {};
-          val2 = marge(val2,jointOnJoint.call(this,obj,obj[row[settings.linkField.nextJoint][i]],val,obj[row[settings.linkField.nextJoint][i]][settings.linkField.augment],obj[row[settings.linkField.nextJoint][i]][settings.linkField.jsonData],settings,obj_callback));
+          val2 = marge(val2,jointOnJoint.call(this,obj,obj[row.nextJoint[i]],val,obj[row.nextJoint[i]].augment,obj[row.nextJoint[i]].jsonData,settings,obj_callback));
       }
       if(isObject(val)){
           val2 = marge(val2,val)
@@ -65,7 +65,7 @@
   function arrayReturnJoint(obj,row,val,aug,jsonData,settings,obj_callback){
       for (var i = 0; i < row[settings.linkField.nextJoint].length; i++){
           var val2 = val2 || [];
-          val2.push(jointOnJoint.call(this,obj,obj[row[settings.linkField.nextJoint][i]],val,obj[row[settings.linkField.nextJoint][i]][settings.linkField.augment],obj[row[settings.linkField.nextJoint][i]][settings.linkField.jsonData],settings,obj_callback));
+          val2.push(jointOnJoint.call(this,obj,obj[row.nextJoint[i]],val,obj[row.nextJoint[i]].augment,obj[row.nextJoint[i]].jsonData,settings,obj_callback));
       }
     return val2;
   }
