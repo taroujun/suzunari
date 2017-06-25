@@ -1,0 +1,46 @@
+'<script>'
+function pageCanger(num){
+  $('.page-cng').css('display','none');  
+  $('.page-' + num).css('display','block');
+  if(num < 0){
+    $('.page-cng').css('display','block');
+  }
+  $("html,body").animate({scrollTop:0});
+ // alert('開け　ページ' + num);
+}
+
+//function 
+
+function Vertically(bool){
+  if(bool){
+    $('.btn-cng').children("button").removeClass("btn-lg");
+    $('.btn-cng').children("button").addClass("btn-xxl");
+    $('.v-zoom').css("zoom","250%");
+   // $(".container-fluid").addClass("p0m0");
+    $(".w-size").removeClass("col-sm-6");
+    $(".w-size").addClass("col-xs-12");
+ //   $(".main-table").css("background-size","400px auto");
+ //   $(".main-table").css("background-image","url('https://dl.dropboxusercontent.com/s/xufhy5a994akotg/a300png.png')");
+  }else{
+    $('.btn-cng').children("button").removeClass("btn-xxl");
+    $('.btn-cng').children("button").addClass("btn-lg");
+    $('.v-zoom').css("zoom","100%");
+    //$(".container-fluid").removeClass("p0m0");
+    $(".w-size").removeClass("col-xs-12");
+    $(".w-size").addClass("col-sm-6");
+  //  $(".main-table").css("background-size","1200px auto");
+  //  $(".main-table").css("background-image","url('https://dl.dropboxusercontent.com/s/ulmuzszz2lwvlyo/advanex_logo2.png')");
+  };
+}
+
+function castRequest(data,libNo){
+  var req = {};
+  req['data'] = data;
+  req['lib'] = settings.librarys[libNo];
+  req['libNo'] = libNo;
+  req['libName'] = settings.librarys[libNo].libraryName;
+  req['main'] = settings.main;
+  return req;
+}
+
+'</script>'
