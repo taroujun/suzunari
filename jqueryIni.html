@@ -18,27 +18,6 @@ $.fn.serializeObject = function()
     return object;
 };
 
-// 画面のコントロール
-    var orientation = window.orientation;
-    if(orientation == 0){
-      //縦持ちの処理
-      Vertically(true);
-    }else{
-      //横持ちの処理
-      Vertically(false);
-  }
-  $(window).on('orientationchange',function(){
-  var orientation = window.orientation;
-    if(orientation == 0){
-      //縦持ちの処理
-      Vertically(true);
-    }else{
-      //横持ちの処理
-      Vertically(false);
-    }
-  });
-
-//  alert(JSON.stringify(castRequest('#defaultForm',0)));
   
   pageCanger(0);
  // $(".btn--Edit").on('click',function(){alert("eee")});
