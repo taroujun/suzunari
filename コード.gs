@@ -17,96 +17,91 @@
  function loadContent(e){
    var obj1 = JSON.parse(e.parameter.jointData);
    var jsonData = obj1.jsonData;  // <<<<<<<< 固定？
-//   var ary = loadSpreadSheet(jsonData.spredSheetID,jsonData.sheetName,jsonData.offset)
-//   var obj = getJointTable(ary,jsonData.field,jsonData.jsonField,jsonData.linkField,jsonData.field.indexOf(jsonData.linkField.jointName));
   var obj = getJointTable(jsonData);
    var next = obj[obj1[jsonData.linkField.nextJoint]];
-   jsonData.pathNo = 0
-   jsonData.depth = 0
-   var obj_callback = {"nameSpace":makeNameSpace};
-   return jointOnJoint.call(e,obj,next,e,next.augment,next.jsonData,jsonData,obj_callback);
+//   jsonData.pathNo = 0
+//   jsonData.depth = 0
+//   var obj.callbacks = {"nameSpace":makeNameSpace};
+   return jointOnJoint.call(e,obj,next,e,next.augment,next.jsonData);
  }
-function makeNameSpace(obj,row,val,aug,jsonData,settings,obj_callback){
+function makeNameSpace(obj,row,val,aug,jsonData){
   settings.pathNo  ++
 //  settings.nameSpace += row.jointName
 }
-
-  function jointOnJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+  function jointOnJoint(obj,row,val,aug,jsonData){
       if(row.nextJoint && obj[row.nextJoint[0]]){
-          settings.depth ++
+       //   settings.depth ++
           if(row.augment.escape || row.nextJoint.length > 2 || obj[row.nextJoint + "-0"] || row.func.indexOf("Joint") ===  row.func.length - 5){
             // out recursive call
-              return searchFunc.call(this,row.func,row.library,settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
+              return searchFunc.apply(this,funcAry(obj,row,val));
           }else{
             // next recursive call
-            if(obj_callback){
-              for(var key in obj_callback){
-                obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+            if(obj.callbacks){
+              for(var key in obj.callbacks){
+                obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
               }
             }              
-            val = jointOnJoint.call(this,obj,obj[row.nextJoint[0]],val,obj[row.nextJoint[0]].augment,obj[row.nextJoint[0]].jsonData,settings,obj_callback);
-            return searchFunc.call(this,row.func,row.library,settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
+            val = jointOnJoint.apply(this,jointAry(obj,row,val));
+            return searchFunc.apply(this,funcAry(obj,row,val));
           }
       }else{
             // end recursive call
-            if(obj_callback){
-              for(var key in obj_callback){
-                obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+            if(obj.callbacks){
+              for(var key in obj.callbacks){
+                obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
               }
             }              
-          return searchFunc.call(this,row.func,row.library,settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
+          return searchFunc.apply(this,funcAry(obj,row,val));
       }
   }
 
-  function setThisObjJoint(obj,row,val,aug,jsonData,settings,obj_callback){
-    var thisObj = searchFunc.call(this,jsonData.func,jsonData.library,settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
+  function setThisObjJoint(obj,row,val,aug,jsonData){
+    var thisObj = searchFunc.call(this,jsonData.func,jsonData.library,obj.thisLibrary,obj,row,val,aug,jsonData);
           if(row.nextJoint && obj[row.nextJoint[0]]){
-            if(obj_callback){
-              for(var key in obj_callback){
-                obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+            if(obj.callbacks){
+              for(var key in obj.callbacks){
+                obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
               }
             }              
-            jointOnJoint.call(thisObj,obj,obj[row.nextJoint[0]],val,obj[row.nextJoint[0]].augment,obj[row.nextJoint[0]].jsonData,settings,obj_callback);
+            jointOnJoint.apply(this,jointAry(obj,row,val));
           }
     thisObj.header += "testJoint".indexOf("Joint") ===  "testJoint".length - 5
     return thisObj;
   }
   
-  function ougKeyJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+  function ougKeyJoint(obj,row,val,aug,jsonData){
       for (var i = 0; i < row[settings.linkField.nextJoint].length; i++){
-            if(obj_callback){
-              for(var key in obj_callback){
-                obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+            if(obj.callbacks){
+              for(var key in obj.callbacks){
+                obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
               }
             }              
           var val2 = val2 || {};
-          val2[obj[row.nextJoint[i]].augment.key] = jointOnJoint.call(this,obj,obj[row.nextJoint[i]],val,obj[row.nextJoint[i]].augment,obj[row.nextJoint[i]].jsonData,settings,obj_callback);
+          val2[obj[row.nextJoint[i]].augment.key] = jointOnJoint.apply(this,jointAry(obj,row,val,i));
       }
     return val2;
   }
 
-  function loadSheetJoint(obj,row,val,aug,jsonData,settings,obj_callback){
- //   var ary = loadSpreadSheet(jsonData.spredSheetID,jsonData.sheetName,jsonData.offset)
- //   var obj2 = getJointTable(ary,jsonData.field,jsonData.jsonField,jsonData.linkField,jsonData.field.indexOf(jsonData.linkField.jointName));
+  function loadSheetJoint(obj,row,val,aug,jsonData){
       var obj2 = getJointTable(jsonData)
-            if(obj_callback){
-              for(var key in obj_callback){
-                obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+            if(obj.callbacks){
+              for(var key in obj.callbacks){
+                obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
               }
             }              
-    return jointOnJoint.call(this,obj2,obj2[row.nextJoint[0]],val,obj2[row.nextJoint[0]].augment,obj2[row.nextJoint[0]].jsonData,settings,obj_callback);
+    return jointOnJoint.apply(this,jointAry(obj2,row,val));
   }
 
-  function combineJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+  function combineJoint(obj,row,val,aug,jsonData){
     var val2 = jsonData
     var val3 = {}
-    for (var i = 0; i < row[settings.linkField.nextJoint].length; i++){
-      if(obj_callback){
-        for(var key in obj_callback){
-          obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+    for (var i = 0; i < row.nextJoint.length; i++){
+      if(obj.callbacks){
+        for(var key in obj.callbacks){
+          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
         }
       }              
-      val3 = jointOnJoint.call(this,obj,obj[row.nextJoint[i]],val,obj[row.nextJoint[i]].augment,obj[row.nextJoint[i]].jsonData,settings,obj_callback)
+      val3 = jointOnJoint.apply(this,jointAry(obj,row,val,i))
       if(isObject(val3)){
         for(var key in val3){
           if(val2[key] !== undefined){
@@ -132,17 +127,17 @@ function criateNameSpace(ary,name){
   }
   return nameSpace + "-" +name
 }
-  function joinTemplateJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+  function joinTemplateJoint(obj,row,val,aug,jsonData){
     var val2 = {}
     var re = jsonData.replaceData || {}
     for (var i = 0; i < row.nextJoint.length; i++){
     var val3 = {}
-      if(obj_callback){
-        for(var key in obj_callback){
-          obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+      if(obj.callbacks){
+        for(var key in obj.callbacks){
+          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
         }
       }
-      val3 = jointOnJoint.call(this,obj,obj[row.nextJoint[i]],val,obj[row.nextJoint[i]].augment,obj[row.nextJoint[i]].jsonData,settings,obj_callback);
+      val3 = jointOnJoint.apply(this,jointAry(obj,row,val,i));
       if(isObject(val3)){
         for(var key in val3){
           if(val2[key] !== undefined){
@@ -155,25 +150,58 @@ function criateNameSpace(ary,name){
     }
     if(aug.key){
       var obj1 ={};
-      re.nameSpace = settings.depth + "-" + obj.sheetName + "-" + row.index
+      re.nameSpace = obj.sheetName + "-" + row.index
       obj1[aug.key] = replaceTemplateTag(jsonData.textContent,marge(re,val2));
       return marge(obj1,jsonData);
     }else{
       return val2;
     }
  }
-  function joinTemplateListJoint(obj,row,val,aug,jsonData,settings,obj_callback){//<<<<<
+function funcAry(obj,row,val){
+  var ary = []
+  ary.push(row.func)
+  ary.push(row.library)
+  ary.push(obj.thisLibrary)
+  ary.push(obj);
+  ary.push(row)
+  ary.push(val)
+  ary.push(row.augment)
+  ary.push(row.jsonData)
+  return ary
+}
+function jointAry(obj,row,val,i){
+  i = i || 0
+  var ary = []
+  ary.push(obj);
+  ary.push(obj[row.nextJoint[i]]);
+  ary.push(val)
+  ary.push(obj[row.nextJoint[i]].augment)
+  ary.push(obj[row.nextJoint[i]].jsonData)
+  return ary
+}
+function listAugAry(obj,row,val,i){
+  i = i || 0
+  var ary = []
+  ary.push(obj);
+  ary.push(obj[row.jointName + "-" + i]);
+  ary.push(val)
+  ary.push(obj[row.jointName + "-" + i].augment)
+  ary.push(obj[row.jointName + "-" + i].jsonData)
+  return ary
+}
+
+  function joinTemplateListJoint(obj,row,val,aug,jsonData){//<<<<<
     var val2 = {}
     var re = jsonData.replaceData || {}
     var i = 0;
     while(obj[row.jointName + "-" + i] !== undefined){
     var val3 = {}
-      if(obj_callback){
-        for(var key in obj_callback){
-          obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+      if(obj.callbacks){
+        for(var key in obj.callbacks){
+          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
         }
       }
-      val3 = jointOnJoint.call(this,obj,obj[row.jointName + "-" + i],val,obj[row.jointName + "-" + i].augment,obj[row.jointName + "-" + i].jsonData,settings,obj_callback);
+      val3 = jointOnJoint.apply(this,listAugAry(obj,row,val,i));
       i++;
       if(isObject(val3)){
         for(var key in val3){
@@ -194,19 +222,19 @@ function criateNameSpace(ary,name){
     }
  }
 
-  function templateJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+  function templateJoint(obj,row,val,aug,jsonData){
     var val2 = ""
     var re = jsonData.replaceData
     for (var i = 0; i < row.nextJoint.length; i++){
     var val3 = {}
-      if(obj_callback){
-        for(var key in obj_callback){
-          obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+      if(obj.callbacks){
+        for(var key in obj.callbacks){
+          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
         }
       }
-      val3 = jointOnJoint.call(this,obj,obj[row.nextJoint[i]],val,obj[row.nextJoint[i]].augment,obj[row.nextJoint[i]].jsonData,settings,obj_callback);
+      val3 = jointOnJoint.apply(this,jointAry(obj,row,val,i));
       if(isObject(val3)){
-        re.nameSpace = settings.depth + "-" + settings.pathNo + "-" + row.index
+        re.nameSpace = obj.sheetName + "-" + row.index
         val2 += replaceTemplateTag(jsonData.textContent,marge(re,val3));
       }
     }
@@ -220,16 +248,16 @@ function criateNameSpace(ary,name){
  }
 
 
-  function addPropertyJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+  function addPropertyJoint(obj,row,val,aug,jsonData){
     var val2 = {}
     var val3 = {}
     for (var i = 0; i < row[settings.linkField.nextJoint].length; i++){
-      if(obj_callback){
-        for(var key in obj_callback){
-          obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+      if(obj.callbacks){
+        for(var key in obj.callbacks){
+          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
         }
       }
-      val3 = jointOnJoint.call(this,obj,obj[row.nextJoint[i]],val,obj[row.nextJoint[i]].augment,obj[row.nextJoint[i]].jsonData,settings,obj_callback)
+      val3 = jointOnJoint.apply(this,jointAry(obj,row,val,i));
       if(isObject(val3)){
         for(var key in val3){
           if(this[key] !== undefined){
@@ -243,17 +271,17 @@ function criateNameSpace(ary,name){
   }
 
 
-  function combineListJoint(obj,row,val,aug,jsonData,settings,obj_callback){//<<<<<
+  function combineListJoint(obj,row,val,aug,jsonData){//<<<<<
     var val2 = jsonData
     var val3 = {}
     var i = 0;
     while(obj[row.jointName + "-" + i] !== undefined){
-      if(obj_callback){
-        for(var key in obj_callback){
-          obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+      if(obj.callbacks){
+        for(var key in obj.callbacks){
+          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
         }
       }
-      val3 = jointOnJoint.call(this,obj,obj[row.jointName + "-" + i],val,obj[row.jointName + "-" + i].augment,obj[row.jointName + "-" + i].jsonData,settings,obj_callback);
+      val3 = jointOnJoint.apply(this,listAugAry(obj,row,val,i));
       i++;
       if(isObject(val3)){
         for(var key in val3){
@@ -273,18 +301,18 @@ function criateNameSpace(ary,name){
       return val1;
     }
  }
-  function templateListJoint(obj,row,val,aug,jsonData,settings,obj_callback){//<<<<<
+  function templateListJoint(obj,row,val,aug,jsonData){//<<<<<
     var val2 = ""
     var re = jsonData.replaceData || {}
     var i = 0;
     while(obj[row.jointName + "-" + i] !== undefined){
     var val3 = {}
-      if(obj_callback){
-        for(var key in obj_callback){
-          obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+      if(obj.callbacks){
+        for(var key in obj.callbacks){
+          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
         }
       }
-      val3 = jointOnJoint.call(this,obj,obj[row.jointName + "-" + i],val,obj[row.jointName + "-" + i].augment,obj[row.jointName + "-" + i].jsonData,settings,obj_callback);
+      val3 = jointOnJoint.apply(this,listAugAry(obj,row,val,i));
       i++;
       if(isObject(val3)){
         val2 += replaceTemplateTag(jsonData.textContent,marge(re,val3));
@@ -299,7 +327,7 @@ function criateNameSpace(ary,name){
     }
  }
 
-  function combineTwig(obj,row,val,aug,jsonData,settings,obj_callback){
+  function combineTwig(obj,row,val,aug,jsonData){
     var val2 = jsonData
       if(isObject(val)){
         for(var key in val){
@@ -314,15 +342,15 @@ function criateNameSpace(ary,name){
   }
 
 
-  function margeJoint(obj,row,val,aug,jsonData,settings,obj_callback){
-      for (var i = 0; i < row[settings.linkField.nextJoint].length; i++){
+  function margeJoint(obj,row,val,aug,jsonData){
+      for (var i = 0; i < row.nextJoint.length; i++){
         var val2 = val2 || {};
-      if(obj_callback){
-        for(var key in obj_callback){
-          obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+      if(obj.callbacks){
+        for(var key in obj.callbacks){
+          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
         }
       }
-        val2 = marge(val2,jointOnJoint.call(this,obj,obj[row.nextJoint[i]],val,obj[row.nextJoint[i]].augment,obj[row.nextJoint[i]].jsonData,settings,obj_callback));
+        val2 = marge(val2,jointOnJoint.apply(this,jointAry(obj,row,val,i)));
       }
       if(isObject(val)){
         val2 = marge(val2,val)
@@ -330,29 +358,29 @@ function criateNameSpace(ary,name){
     return val2;
   }
   
-  function arrayReturnJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+  function arrayReturnJoint(obj,row,val,aug,jsonData){
       for (var i = 0; i < row[settings.linkField.nextJoint].length; i++){
           var val2 = val2 || [];
-      if(obj_callback){
-        for(var key in obj_callback){
-          obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+      if(obj.callbacks){
+        for(var key in obj.callbacks){
+          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
         }
       }
-          val2.push(jointOnJoint.call(this,obj,obj[row.nextJoint[i]],val,obj[row.nextJoint[i]].augment,obj[row.nextJoint[i]].jsonData,settings,obj_callback));
+          val2.push(jointOnJoint.apply(this,jointAry(obj,row,val,i)));
       }
     return val2;
   }
   
-  function setLayoutJoint(obj,row,val,aug,jsonData,settings,obj_callback){
-    var thisObj = searchFunc.call(this,jsonData.func,jsonData.library,settings.thisLibrary,obj,row,val,aug,jsonData,settings,obj_callback);
+  function setLayoutJoint(obj,row,val,aug,jsonData){
+    var thisObj = searchFunc.call(this,jsonData.func,jsonData.library,obj.thisLibrary,obj,row,val,aug,jsonData);
     var val2 ={}
     if(row.nextJoint && obj[row.nextJoint[0]]){
-      if(obj_callback){
-        for(var key in obj_callback){
-          obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+      if(obj.callbacks){
+        for(var key in obj.callbacks){
+          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
         }
       }
-      val2 = jointOnJoint.call(thisObj,obj,obj[row.nextJoint[0]],val,obj[row.nextJoint[0]].augment,obj[row.nextJoint[0]].jsonData,settings,obj_callback);
+      val2 = jointOnJoint.apply(this,jointAry(obj,row,val));
     }
     if(isObject(val2)){
        for(var key in val2){
@@ -368,7 +396,7 @@ function criateNameSpace(ary,name){
     return thisObj;
   }
   
-  function addPropertyTwig(obj,row,val,aug,jsonData,settings,obj_callback){
+  function addPropertyTwig(obj,row,val,aug,jsonData){
         if(this[aug.target]){
             this[aug.target] += val;
         }else{
@@ -376,7 +404,7 @@ function criateNameSpace(ary,name){
         }
   }
 
-  function setPropertyTwig(obj,row,val,aug,jsonData,settings,obj_callback){//<<<<addPropety please
+  function setPropertyTwig(obj,row,val,aug,jsonData){//<<<<addPropety please
     if(val && !(isObject(val)) && jsonData[aug.target] === undefined){
       this[aug.key] = val
     }else if(val && isObject(val) && jsonData[aug.target] === undefined && val[aug.key] === undefined){
@@ -397,7 +425,7 @@ function criateNameSpace(ary,name){
     }
   }
   
-  function addPageDivTwig(obj,row,val,aug,jsonData,settings,obj_callback){
+  function addPageDivTwig(obj,row,val,aug,jsonData){
     this.pageDiv[aug.pageNo] = this.pageDiv[aug.pageNo] || {}
         if(this.pageDiv[aug.pageNo][aug.target]){
             this.pageDiv[aug.pageNo][aug.target] += val;
@@ -406,7 +434,7 @@ function criateNameSpace(ary,name){
     }
   }
 
- function addObjectTwig(obj,row,val,aug,jsonData,settings,obj_callback){
+ function addObjectTwig(obj,row,val,aug,jsonData){
    if(isObject(val)){
        for(var key in val){
           if(this[key] !== undefined && this[key]){
@@ -418,11 +446,11 @@ function criateNameSpace(ary,name){
     }
  }
   
-  function jsonDataTwig(obj,row,val,aug,jsonData,settings,obj_callback){
+  function jsonDataTwig(obj,row,val,aug,jsonData){
     return jsonData;
   }
   
-  function addJsonDataJoint(obj,row,val,aug,jsonData,settings,obj_callback){
+  function addJsonDataJoint(obj,row,val,aug,jsonData){
     for(var key in jsonData){
       if(this[key] !== undefined){
         this[key] += jsonData[key]
@@ -432,46 +460,46 @@ function criateNameSpace(ary,name){
     }
   }
 
-  function margeListJoint(obj,row,val,aug,jsonData,settings,obj_callback){//<<<<<
+  function margeListJoint(obj,row,val,aug,jsonData){//<<<<<
     var i = 0;
         while(obj[row[settings.linkField.jointName] + "-" + i] !== undefined){
         var obj1 = obj1 || {};
-      if(obj_callback){
-        for(var key in obj_callback){
-          obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+      if(obj.callbacks){
+        for(var key in obj.callbacks){
+          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
         }
       }
-        obj1 = marge(obj1,jointOnJoint.call(this,obj,obj[row.jointName + "-" + i],val,obj[row.jointName + "-" + i].augment,obj[row.jointName + "-" + i].jsonData,settings,obj_callback));
+        obj1 = marge(obj1,jointOnJoint.call(this,obj,obj[row.jointName + "-" + i],val,obj[row.jointName + "-" + i].augment,obj[row.jointName + "-" + i].jsonData));
         i++;
         }
     return obj1;
  }
 
-  function listJoint(obj,row,val,aug,jsonData,settings,obj_callback){//<<<
+  function listJoint(obj,row,val,aug,jsonData){//<<<
     var i = 0;
         while(obj[row[settings.linkField.jointName] + "-" + i] !== undefined){
         var ary = ary || [];
-      if(obj_callback){
-        for(var key in obj_callback){
-          obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+      if(obj.callbacks){
+        for(var key in obj.callbacks){
+          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
         }
       }
-        ary[i] = jointOnJoint.call(this,obj,obj[row[settings.linkField.jointName] + "-" + i],val,obj[row[settings.linkField.jointName] + "-" + i][settings.linkField.augment],obj[row[settings.linkField.jointName] + "-" + i][settings.linkField.jsonData],settings,obj_callback);
+        ary[i] = jointOnJoint.call(this,obj,obj[row[settings.linkField.jointName] + "-" + i],val,obj[row[settings.linkField.jointName] + "-" + i][settings.linkField.augment],obj[row[settings.linkField.jointName] + "-" + i][settings.linkField.jsonData]);
         i++;
         }
     return ary;
  }
  
-  function joinListJoint(obj,row,val,aug,jsonData,settings,obj_callback){//<<<<<
+  function joinListJoint(obj,row,val,aug,jsonData){//<<<<<
     var i = 0;
         while(obj[row.jointName + "-" + i] !== undefined){
         var val1 = val1 || "";
-      if(obj_callback){
-        for(var key in obj_callback){
-          obj_callback[key].call(this,obj,row,val,aug,jsonData,settings,obj_callback);
+      if(obj.callbacks){
+        for(var key in obj.callbacks){
+          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
         }
       }
-        val1 += jointOnJoint.call(this,obj,obj[row.jointName + "-" + i],val,obj[row.jointName + "-" + i].augment,obj[row.jointName + "-" + i].jsonData,settings,obj_callback);
+        val1 += jointOnJoint.call(this,obj,obj[row.jointName + "-" + i],val,obj[row.jointName + "-" + i].augment,obj[row.jointName + "-" + i].jsonData);
         i++;
         }
         if(aug.key){
@@ -483,11 +511,11 @@ function criateNameSpace(ary,name){
         }
  }
 
-  function jsonStringifyTwig(obj,row,val,aug,jsonData,settings,obj_callback){
+  function jsonStringifyTwig(obj,row,val,aug,jsonData){
     return JSON.stringify(val);
   }
 
-  function libraryFileTwig(obj,row,val,aug,jsonData,settings,obj_callback){
+  function libraryFileTwig(obj,row,val,aug,jsonData){
     if(aug.key){
       var obj1 ={};
       obj1[aug.key] = replaceTag(HtmlService.createHtmlOutputFromFile(aug.fileName).getContent());
@@ -497,7 +525,7 @@ function criateNameSpace(ary,name){
     }
   }
 
-  function liblaryTemplateFromFileTwig(obj,row,val,aug,jsonData,settings,obj_callback){
+  function liblaryTemplateFromFileTwig(obj,row,val,aug,jsonData){
     var re = jsonData.replaceData || {}
     if(isObject(val)){
       re = marge(re,val)
@@ -515,7 +543,7 @@ function criateNameSpace(ary,name){
     }
   }
   
-  function replaceTemplateFromJsonTwig(obj,row,val,aug,jsonData,settings,obj_callback){
+  function replaceTemplateFromJsonTwig(obj,row,val,aug,jsonData){
     var re = jsonData.replaceData || {}
         if(isObject(val)){
             re = marge(re,val)
@@ -536,19 +564,19 @@ function criateNameSpace(ary,name){
         }
   }
 
-  function combineNextTwig(obj,row,val,aug,jsonData,settings,obj_callback){
+  function combineNextTwig(obj,row,val,aug,jsonData){
     this[aug.target] = combineArrayObject(this[aug.target],val);
   }
   
-  function combineJsonTwig(obj,row,val,aug,jsonData,settings,obj_callback){
+  function combineJsonTwig(obj,row,val,aug,jsonData){
     this[aug.target] = combineArrayObject(this[aug.target],jsonData);
   }
     
-  function singleTwig(obj,row,val,aug,jsonData,settings,obj_callback){
+  function singleTwig(obj,row,val,aug,jsonData){
     return val;
   }
 
-  function joinInTwig(obj,row,val,aug,jsonData,settings,obj_callback){
+  function joinInTwig(obj,row,val,aug,jsonData){
     return Array.prototype.join.apply(val,aug.augAry);
   }
 
@@ -621,7 +649,14 @@ function criateNameSpace(ary,name){
     var ary = loadSpreadSheet(data.spredSheetID,data.sheetName,data.offset)
     var obj ={"spredSheetID" : data.spredSheetID,
               "sheetName"    : data.sheetName,
-              "offset"       : data.offset
+              "offset"       : data.offset,
+              "settings"     : data,
+              "thisLibrary"  : data.thisLibrary,
+              "callbacks"    : {},
+              "current"      : "",
+              "next"         : "",
+              "nextArr"      : "",
+              "array"        : ""
              };
         for (var i = 0; i < data.field.length; i++){//<<<<<<< 
             for(var key in data.linkField){
@@ -651,10 +686,13 @@ function criateNameSpace(ary,name){
     return obj;
   }
   
-  function loadSpreadSheet(spredSheetID,sheetName,offset){
+  function loadSpreadSheet(spredSheetID,sheetName,offset,last){
     offset = offset || 1
     var sheet = SpreadsheetApp.openById(spredSheetID).getSheetByName(sheetName);//(e.parameter.SettingSheetName);
-    return sheet.getRange(offset,1,sheet.getLastRow() - (offset - 1),sheet.getLastColumn()).getValues();
+    var endRow = last || sheet.getLastRow();
+    if(offset <= endRow){
+    }
+    return sheet.getRange(offset,1,endRow - (offset - 1),sheet.getLastColumn()).getValues();
   }
   
   function marge(obj1,obj2){
@@ -696,7 +734,7 @@ function criateNameSpace(ary,name){
     return Session.getActiveUser().getEmail();
   }
 
-  function setContainer(obj,row,val,aug,jsonData,settings,obj_callback){
+  function setContainer(obj,row,val,aug,jsonData){
     return new SuzunariContainer(val)
   }
 
