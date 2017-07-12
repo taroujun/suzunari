@@ -9,9 +9,9 @@
 
  function doGet(e) {
     
-   var content = loadContent(e);
+   var contents = loadContent(e);
 
-   return content.evaluate();   
+   return contents.evaluate();   
  }
 
  function loadContent(e){
@@ -19,503 +19,71 @@
    var jsonData = obj1.jsonData;  // <<<<<<<< 固定？
   var obj = getJointTable(jsonData);
    var next = obj[obj1[jsonData.linkField.nextJoint]];
-//   jsonData.pathNo = 0
-//   jsonData.depth = 0
-//   var obj.callbacks = {"nameSpace":makeNameSpace};
-   return jointOnJoint.call(e,obj,next,e,next.augment,next.jsonData);
- }
-function makeNameSpace(obj,row,val,aug,jsonData){
-  settings.pathNo  ++
-//  settings.nameSpace += row.jointName
-}
-  function jointOnJoint(obj,row,val,aug,jsonData){
-      if(row.nextJoint && obj[row.nextJoint[0]]){
-       //   settings.depth ++
-          if(row.augment.escape || row.nextJoint.length > 2 || obj[row.nextJoint + "-0"] || row.func.indexOf("Joint") ===  row.func.length - 5){
-            // out recursive call
-              return searchFunc.apply(this,funcAry(obj,row,val));
-          }else{
-            // next recursive call
-            if(obj.callbacks){
-              for(var key in obj.callbacks){
-                obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
-              }
-            }              
-            val = jointOnJoint.apply(this,jointAry(obj,row,val));
-            return searchFunc.apply(this,funcAry(obj,row,val));
-          }
-      }else{
-            // end recursive call
-            if(obj.callbacks){
-              for(var key in obj.callbacks){
-                obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
-              }
-            }              
-          return searchFunc.apply(this,funcAry(obj,row,val));
-      }
-  }
-
-  function setThisObjJoint(obj,row,val,aug,jsonData){
-    var thisObj = searchFunc.call(this,jsonData.func,jsonData.library,obj.thisLibrary,obj,row,val,aug,jsonData);
-          if(row.nextJoint && obj[row.nextJoint[0]]){
-            if(obj.callbacks){
-              for(var key in obj.callbacks){
-                obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
-              }
-            }              
-            jointOnJoint.apply(this,jointAry(obj,row,val));
-          }
-    thisObj.header += "testJoint".indexOf("Joint") ===  "testJoint".length - 5
-    return thisObj;
-  }
-  
-  function ougKeyJoint(obj,row,val,aug,jsonData){
-      for (var i = 0; i < row[settings.linkField.nextJoint].length; i++){
-            if(obj.callbacks){
-              for(var key in obj.callbacks){
-                obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
-              }
-            }              
-          var val2 = val2 || {};
-          val2[obj[row.nextJoint[i]].augment.key] = jointOnJoint.apply(this,jointAry(obj,row,val,i));
-      }
-    return val2;
-  }
-
-  function loadSheetJoint(obj,row,val,aug,jsonData){
-      var obj2 = getJointTable(jsonData)
-            if(obj.callbacks){
-              for(var key in obj.callbacks){
-                obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
-              }
-            }              
-    return jointOnJoint.apply(this,jointAry(obj2,row,val));
-  }
-
-  function combineJoint(obj,row,val,aug,jsonData){
-    var val2 = jsonData
-    var val3 = {}
-    for (var i = 0; i < row.nextJoint.length; i++){
-      if(obj.callbacks){
-        for(var key in obj.callbacks){
-          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
-        }
-      }              
-      val3 = jointOnJoint.apply(this,jointAry(obj,row,val,i))
-      if(isObject(val3)){
-        for(var key in val3){
-          if(val2[key] !== undefined){
-            val2[key] += val3[key]
-          }else{
-            val2[key] = val3[key]
-          }
-        }
-      }
-    }
-    if(aug.key){
-      var obj1 ={};
-      obj1[aug.key] = val2;
-      return marge(obj1,jsonData);
-    }else{
-      return val2;
-    }
-  }
-function criateNameSpace(ary,name){
-  var nameSpace = ""
-  for (var i = 0; i < ary.length; i++){
-    nameSpace += ary[i]
-  }
-  return nameSpace + "-" +name
-}
-  function joinTemplateJoint(obj,row,val,aug,jsonData){
-    var val2 = {}
-    var re = jsonData.replaceData || {}
-    for (var i = 0; i < row.nextJoint.length; i++){
-    var val3 = {}
-      if(obj.callbacks){
-        for(var key in obj.callbacks){
-          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
-        }
-      }
-      val3 = jointOnJoint.apply(this,jointAry(obj,row,val,i));
-      if(isObject(val3)){
-        for(var key in val3){
-          if(val2[key] !== undefined){
-            val2[key] += val3[key]
-          }else{
-            val2[key] = val3[key]
-          }
-        }
-      }
-    }
-    if(aug.key){
-      var obj1 ={};
-      re.nameSpace = obj.sheetName + "-" + row.index
-      obj1[aug.key] = replaceTemplateTag(jsonData.textContent,marge(re,val2));
-      return marge(obj1,jsonData);
-    }else{
-      return val2;
-    }
- }
-function funcAry(obj,row,val){
-  var ary = []
-  ary.push(row.func)
-  ary.push(row.library)
-  ary.push(obj.thisLibrary)
-  ary.push(obj);
-  ary.push(row)
-  ary.push(val)
-  ary.push(row.augment)
-  ary.push(row.jsonData)
-  return ary
-}
-function jointAry(obj,row,val,i){
-  i = i || 0
-  var ary = []
-  ary.push(obj);
-  ary.push(obj[row.nextJoint[i]]);
-  ary.push(val)
-  ary.push(obj[row.nextJoint[i]].augment)
-  ary.push(obj[row.nextJoint[i]].jsonData)
-  return ary
-}
-function listAugAry(obj,row,val,i){
-  i = i || 0
-  var ary = []
-  ary.push(obj);
-  ary.push(obj[row.jointName + "-" + i]);
-  ary.push(val)
-  ary.push(obj[row.jointName + "-" + i].augment)
-  ary.push(obj[row.jointName + "-" + i].jsonData)
-  return ary
-}
-
-  function joinTemplateListJoint(obj,row,val,aug,jsonData){//<<<<<
-    var val2 = {}
-    var re = jsonData.replaceData || {}
-    var i = 0;
-    while(obj[row.jointName + "-" + i] !== undefined){
-    var val3 = {}
-      if(obj.callbacks){
-        for(var key in obj.callbacks){
-          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
-        }
-      }
-      val3 = jointOnJoint.apply(this,listAugAry(obj,row,val,i));
-      i++;
-      if(isObject(val3)){
-        for(var key in val3){
-          if(val2[key] !== undefined){
-            val2[key] += val3[key]
-          }else{
-            val2[key] = val3[key]
-          }
-        }
-      }
-    }
-    if(aug.key){
-      var obj1 ={};
-      obj1[aug.key] = replaceTemplateTag(jsonData.textContent,marge(re,val2));
-      return marge(obj1,jsonData);
-    }else{
-      return val2;
-    }
+   var paramAry = [this,obj,obj1,next,next.options,next.jsonData]
+   return searchFunc.call(e,next.func,"",obj1.thisLibrary,obj,e,next,next.options,next.jsonData);
  }
 
-  function templateJoint(obj,row,val,aug,jsonData){
-    var val2 = ""
-    var re = jsonData.replaceData
-    for (var i = 0; i < row.nextJoint.length; i++){
-    var val3 = {}
-      if(obj.callbacks){
-        for(var key in obj.callbacks){
-          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
-        }
-      }
-      val3 = jointOnJoint.apply(this,jointAry(obj,row,val,i));
-      if(isObject(val3)){
-        re.nameSpace = obj.sheetName + "-" + row.index
-        val2 += replaceTemplateTag(jsonData.textContent,marge(re,val3));
-      }
-    }
-    if(aug.key){
-      var obj1 ={};
-      obj1[aug.key] = val2;
-      return marge(obj1,jsonData);
-    }else{
-      return val2;
-    }
- }
-
-
-  function addPropertyJoint(obj,row,val,aug,jsonData){
-    var val2 = {}
-    var val3 = {}
-    for (var i = 0; i < row[settings.linkField.nextJoint].length; i++){
-      if(obj.callbacks){
-        for(var key in obj.callbacks){
-          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
-        }
-      }
-      val3 = jointOnJoint.apply(this,jointAry(obj,row,val,i));
-      if(isObject(val3)){
-        for(var key in val3){
-          if(this[key] !== undefined){
-            this[key] += val3[key]
-          }else{
-            this[key] = val3[key]
-          }
-        }
-      }
-    }
-  }
-
-
-  function combineListJoint(obj,row,val,aug,jsonData){//<<<<<
-    var val2 = jsonData
-    var val3 = {}
-    var i = 0;
-    while(obj[row.jointName + "-" + i] !== undefined){
-      if(obj.callbacks){
-        for(var key in obj.callbacks){
-          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
-        }
-      }
-      val3 = jointOnJoint.apply(this,listAugAry(obj,row,val,i));
-      i++;
-      if(isObject(val3)){
-        for(var key in val3){
-          if(val2[key] !== undefined){
-            val2[key] += val3[key]
-          }else{
-            val2[key] = val3[key]
-          }
-        }
-      }
-    }
-    if(aug.key){
-      var obj1 ={};
-      obj1[aug.key] = val1;
-      return obj1;
-    }else{
-      return val1;
-    }
- }
-  function templateListJoint(obj,row,val,aug,jsonData){//<<<<<
-    var val2 = ""
-    var re = jsonData.replaceData || {}
-    var i = 0;
-    while(obj[row.jointName + "-" + i] !== undefined){
-    var val3 = {}
-      if(obj.callbacks){
-        for(var key in obj.callbacks){
-          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
-        }
-      }
-      val3 = jointOnJoint.apply(this,listAugAry(obj,row,val,i));
-      i++;
-      if(isObject(val3)){
-        val2 += replaceTemplateTag(jsonData.textContent,marge(re,val3));
-      }
-    }
-    if(aug.key){
-      var obj1 ={};
-      obj1[aug.key] = val2;
-      return marge(obj1,jsonData);
-    }else{
-      return val2;
-    }
- }
-
-  function combineTwig(obj,row,val,aug,jsonData){
-    var val2 = jsonData
-      if(isObject(val)){
-        for(var key in val){
-          if(val2[key] !== undefined){
-            val2[key] += val[key]
-          }else{
-            val2[key] = val[key]
-          }
-        }
-      }
-    return val2
-  }
-
-
-  function margeJoint(obj,row,val,aug,jsonData){
-      for (var i = 0; i < row.nextJoint.length; i++){
-        var val2 = val2 || {};
-      if(obj.callbacks){
-        for(var key in obj.callbacks){
-          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
-        }
-      }
-        val2 = marge(val2,jointOnJoint.apply(this,jointAry(obj,row,val,i)));
-      }
-      if(isObject(val)){
-        val2 = marge(val2,val)
-      }
-    return val2;
-  }
-  
-  function arrayReturnJoint(obj,row,val,aug,jsonData){
-      for (var i = 0; i < row[settings.linkField.nextJoint].length; i++){
-          var val2 = val2 || [];
-      if(obj.callbacks){
-        for(var key in obj.callbacks){
-          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
-        }
-      }
-          val2.push(jointOnJoint.apply(this,jointAry(obj,row,val,i)));
-      }
-    return val2;
-  }
-  
-  function setLayoutJoint(obj,row,val,aug,jsonData){
+function setLayoutJoint(obj,val,row,aug,jsonData){
     var thisObj = searchFunc.call(this,jsonData.func,jsonData.library,obj.thisLibrary,obj,row,val,aug,jsonData);
     var val2 ={}
-    if(row.nextJoint && obj[row.nextJoint[0]]){
-      if(obj.callbacks){
-        for(var key in obj.callbacks){
-          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
-        }
-      }
-      val2 = jointOnJoint.apply(this,jointAry(obj,row,val));
-    }
-    if(isObject(val2)){
-       for(var key in val2){
-          if(thisObj[key] !== undefined && thisObj[key]){
-             thisObj[key] += val2[key];
-          }else if(thisObj[key] !== undefined && !thisObj[key]){
-             thisObj[key] = val2[key];
-          }
-       }
-    }
+    row.rowName = "next"
+    row.prev = "root"
+    val2 = recursiveSearch.call(thisObj,arguments)
+    combine(thisObj,val2);
     if(jsonData.title !== undefined){thisObj.title = jsonData.title}
     if(jsonData.faviconUrl !== undefined){thisObj.faviconUrl = jsonData.faviconUrl}   
     return thisObj;
   }
-  
-  function addPropertyTwig(obj,row,val,aug,jsonData){
-        if(this[aug.target]){
-            this[aug.target] += val;
-        }else{
-            this[aug.target] = val;
-        }
-  }
 
-  function setPropertyTwig(obj,row,val,aug,jsonData){//<<<<addPropety please
-    if(val && !(isObject(val)) && jsonData[aug.target] === undefined){
-      this[aug.key] = val
-    }else if(val && isObject(val) && jsonData[aug.target] === undefined && val[aug.key] === undefined){
-      this[aug.key] = val
-    }else if(val && !(isObject(val)) && jsonData[aug.target] !== undefined){
-      this[aug.key] = jsonData[aug.key]
-    }else if(val && isObject(val) && jsonData[aug.target] === undefined && val[aug.key] !== undefined){
-      this[aug.key] = val[aug.key]
-    }else if(val && isObject(val) && jsonData[aug.target] !== undefined && val[aug.key] !== undefined){
-      val[aug.key] += jsonData[aug.target]
-      this[aug.target] = val[aug.key]
-    }else if(!val && jsonData[aug.target] !== undefined){
-      this[aug.target] = val[aug.key]
-    }else if(!val && jsonData[aug.target] === undefined){
-      this[aug.target] = jsonData
-    }else if(!val && !jsonData){
-      this[aug.target] = ""
-    }
-  }
-  
-  function addPageDivTwig(obj,row,val,aug,jsonData){
-    this.pageDiv[aug.pageNo] = this.pageDiv[aug.pageNo] || {}
-        if(this.pageDiv[aug.pageNo][aug.target]){
-            this.pageDiv[aug.pageNo][aug.target] += val;
-        }else{
-            this.pageDiv[aug.pageNo][aug.target] = val;
+  function loadSheetJoint(obj,val,row,aug,jsonData){
+    arguments[0] = getJointTable(jsonData)
+    if(row.nextJoint){
+      for (var i = 0; i < row.nextJoint.length; i++){     
+        return recursiveSearch.call(this,arguments,i)
+      }
+    }else{
+      return replaceContensTag(obj,row,{}) //<<<?
     }
   }
 
- function addObjectTwig(obj,row,val,aug,jsonData){
-   if(isObject(val)){
-       for(var key in val){
-          if(this[key] !== undefined && this[key]){
-             this[key] += val[key];
-          }else if(this[key] !== undefined && !this[key]){
-             this[key] = val[key];
-          }
-       }
-    }
- }
-  
-  function jsonDataTwig(obj,row,val,aug,jsonData){
-    return jsonData;
-  }
-  
-  function addJsonDataJoint(obj,row,val,aug,jsonData){
-    for(var key in jsonData){
-      if(this[key] !== undefined){
-        this[key] += jsonData[key]
-      }else{
-        this[key] = jsonData[key]
+  function separateJoint(obj,val,row,aug,jsonData){
+    var val2 = {}
+    if(row.nextJoint){
+      for (var i = 0; i < row.nextJoint.length; i++){     
+        val2 = combine(val2,replaceContensTag.call(this,obj,row,recursiveSearch.call(this,arguments,i)))
       }
+      return val2;
+    }else{
+      return replaceContensTag(obj,row,{})
     }
   }
 
-  function margeListJoint(obj,row,val,aug,jsonData){//<<<<<
-    var i = 0;
-        while(obj[row[settings.linkField.jointName] + "-" + i] !== undefined){
-        var obj1 = obj1 || {};
-      if(obj.callbacks){
-        for(var key in obj.callbacks){
-          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
-        }
+  function multipleJoint(obj,val,row,aug,jsonData){
+    var val2 = {}
+//    this.header += JSON.stringify(row) + "---mul<br><br>"
+    if(row.nextJoint){
+      for (var i = 0; i < row.nextJoint.length; i++){
+        val2 = combine(val2,recursiveSearch.call(this,arguments,i));
       }
-        obj1 = marge(obj1,jointOnJoint.call(this,obj,obj[row.jointName + "-" + i],val,obj[row.jointName + "-" + i].augment,obj[row.jointName + "-" + i].jsonData));
-        i++;
-        }
-    return obj1;
+      return combine(replaceContensTag.call(this,obj,row,val2),val2)
+    }else{
+      return replaceContensTag(obj,row,{})
+    }
  }
 
-  function listJoint(obj,row,val,aug,jsonData){//<<<
-    var i = 0;
-        while(obj[row[settings.linkField.jointName] + "-" + i] !== undefined){
-        var ary = ary || [];
-      if(obj.callbacks){
-        for(var key in obj.callbacks){
-          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
-        }
+  function jsonStringifyTwig(obj,val,row,aug,jsonData){
+    var val2 = {}
+    if(row.nextJoint){
+      for (var i = 0; i < row.nextJoint.length; i++){     
+        val2 = marge(replaceContensTag.call(this,obj,row,recursiveSearch.call(this,arguments,i)),val2)
       }
-        ary[i] = jointOnJoint.call(this,obj,obj[row[settings.linkField.jointName] + "-" + i],val,obj[row[settings.linkField.jointName] + "-" + i][settings.linkField.augment],obj[row[settings.linkField.jointName] + "-" + i][settings.linkField.jsonData]);
-        i++;
-        }
-    return ary;
- }
- 
-  function joinListJoint(obj,row,val,aug,jsonData){//<<<<<
-    var i = 0;
-        while(obj[row.jointName + "-" + i] !== undefined){
-        var val1 = val1 || "";
-      if(obj.callbacks){
-        for(var key in obj.callbacks){
-          obj.callbacks[key].call(this,obj,row,val,aug,jsonData);
-        }
-      }
-        val1 += jointOnJoint.call(this,obj,obj[row.jointName + "-" + i],val,obj[row.jointName + "-" + i].augment,obj[row.jointName + "-" + i].jsonData);
-        i++;
-        }
-        if(aug.key){
-            var obj1 ={};
-            obj1[aug.key] = val1;
-            return obj1;
-        }else{
-            return val1;
-        }
- }
-
-  function jsonStringifyTwig(obj,row,val,aug,jsonData){
-    return JSON.stringify(val);
+    return JSON.stringify(val2); //>>>どこに？
+    }else{
+      return JSON.stringify(replaceContensTag(obj,row,{})) //>>>どこに？
+    }
   }
 
-  function libraryFileTwig(obj,row,val,aug,jsonData){
+  function libraryFileTwig(obj,val,row,aug,jsonData){ //>>>lib?
     if(aug.key){
       var obj1 ={};
       obj1[aug.key] = replaceTag(HtmlService.createHtmlOutputFromFile(aug.fileName).getContent());
@@ -523,61 +91,6 @@ function listAugAry(obj,row,val,i){
     }else{
       return replaceTag(HtmlService.createHtmlOutputFromFile(aug.fileName).getContent());
     }
-  }
-
-  function liblaryTemplateFromFileTwig(obj,row,val,aug,jsonData){
-    var re = jsonData.replaceData || {}
-    if(isObject(val)){
-      re = marge(re,val)
-    }
-    var html = HtmlService.createTemplateFromFile(aug.fileName);
-    for(var key in re){
-      html[key] = re[key]
-    }  
-    if(aug.key){
-      var obj1 ={};
-      obj1[aug.key] = html.evaluate().getContent();
-      return obj1;
-    }else{
-      return html.evaluate().getContent();;
-    }
-  }
-  
-  function replaceTemplateFromJsonTwig(obj,row,val,aug,jsonData){
-    var re = jsonData.replaceData || {}
-        if(isObject(val)){
-            re = marge(re,val)
-        }
-        for(var key in jsonData){
-            if(this[key] !== undefined && this[key]){
-                this[key] += replaceTemplateTag(jsonData[key],re);
-            }else if(this[key] !== undefined && !this[key]){
-                this[key] = replaceTemplateTag(jsonData[key],re);
-            }
-        }
-        if(aug.key){
-            var obj1 = {}
-            obj1[aug.key] = replaceTemplateTag(jsonData.textContent,re);
-            return obj1
-        }else{
-            return replaceTemplateTag(jsonData.textContent,re);
-        }
-  }
-
-  function combineNextTwig(obj,row,val,aug,jsonData){
-    this[aug.target] = combineArrayObject(this[aug.target],val);
-  }
-  
-  function combineJsonTwig(obj,row,val,aug,jsonData){
-    this[aug.target] = combineArrayObject(this[aug.target],jsonData);
-  }
-    
-  function singleTwig(obj,row,val,aug,jsonData){
-    return val;
-  }
-
-  function joinInTwig(obj,row,val,aug,jsonData){
-    return Array.prototype.join.apply(val,aug.augAry);
   }
 
   function libraryApply(func,opt_library) { // 関数が有れば関数を、なければ　undefined　を返す。
@@ -596,16 +109,33 @@ function listAugAry(obj,row,val,i){
     return lib(req);
   }
 
-  function combine(Obj1,Obj2,opt_ward){
+  function combine(obj1,obj2,opt_ward){
     var ward = opt_ward || ""
-    for(var key in Obj2){
-      if(Obj1[key] !== undefined && Obj1[key]){
-        Obj1[key] += ward + Obj2[key];
-      }else{
-        Obj1[key] = Obj2[key];
+    if(isObject(obj1) && isObject(obj2)){
+      for(var key in obj2){
+        if(typeof (obj2[key]) == "string" || obj2[key] instanceof String){
+          if(obj1[key] !== undefined && obj1[key]){
+            obj1[key] += ward + obj2[key];
+          }else{
+            obj1[key] = obj2[key];
+          }
+        }else if(isObject(obj2[key])){
+          obj1[key] = marge(obj1[key],obj2[key])
+  //        if(obj1[key] !== undefined && obj1[key]){
+  //         obj1[key] = combine(obj1[key],obj2[key],opt_ward);
+  //        }else{
+  //          obj1[key] = marge(obj1[key],obj2[key])
+  //        }
+        }else if(Object.prototype.toString.call(obj2[key]) === '[object Array]'){
+          if(obj1[key] !== undefined && obj1[key] && Object.prototype.toString.call(obj1[key]) === '[object Array]'){
+            obj1[key].concat(obj2[key]);
+          }else{
+            obj1[key] = obj2[key];
+          }        
+        }
       }
+    return obj1;
     }
-    return Obj1;
   }
 
   function combineArrayObject(aryObj1,aryObj2){
@@ -644,19 +174,114 @@ function listAugAry(obj,row,val,i){
         }
   }
 
+ function recursiveSearch(arg,i){
+   var args = Array.prototype.slice.call(arguments[0]);
+   args = JSON.parse(JSON.stringify(args))
+   var args2 = Array.prototype.slice.call(arguments);
+   var i = i || 0
+   args = args.concat(args2)
+   for (var j = 0; j < arguments[0].length; j++){
+     if(isObject(args[j])){
+       if(args[j].callbacks !== undefined){
+         var obj = args[j]
+         }else if(args[j].rowName == "next"){
+           var row = args[j]
+           }else if(args[j].rowName == "current"){
+             var val = args[j]
+           }
+     }
+   }
+   if(row && row !== undefined){
+     if(obj[row.nextJoint[i]].func){
+         var func = obj[row.nextJoint[i]].func || obj[row.nextJoint[i]].options[obj[row.nextJoint[i]].jointName].func
+         var next = obj[row.nextJoint[i]]
+         var lib = ""
+         if(row.library !== undefined && row.library && row.library !== obj.thisLibrary ){
+           lib = row.library
+         }else if(row.options[row.jointName] !== undefined){
+           if(row.options[row.jointName].library !== undefined &&row.options[row.jointName].library && row.options[row.jointName].library !== obj.thisLibrary){
+             lib = row.options[row.jointName].library
+           }
+         }
+         var libfunc = libraryApply(func,lib);
+         if(libfunc !== undefined) {
+           if(obj[row.jointName])obj[row.jointName].rowName = "current"
+           if(next)next.rowName = "next"
+           next.prev = row.jointName
+           var ary = [obj,
+                      row,
+                      next,
+                      next.options,
+                      next.jsonData]
+           for (var k = 5; k < arguments.length; k++){
+             ary.push(arguments[k])
+           }                  
+           if(obj.callbacks){
+             for(var key in obj.callbacks){
+               obj.callbacks[key].apply(this,ary);
+             }
+           }
+           return libfunc.call(this,ary);
+         }
+   }else{
+     return replaceContensTag(obj,obj[row.nextJoint[i]],{})
+     }
+   }
+ }
+
+function replaceContensTag(obj,row,ret){
+  var obj1 = margeFanc(obj,row,ret)
+  obj1.nameSpace = obj.sheetName + "-" + row.index
+  obj1.spredSheetID = obj.spredSheetID
+  obj1.sheetName = obj.sheetName
+  obj1.offset = obj.offset
+  obj1.jointName = row.jointName
+  obj1.nextJoint = row.nextJoint
+  obj1.index = row.index
+  obj1.prev = row.prev
+  var rep = replaceTemplateTag(JSON.stringify(row.jsonData),obj1)
+  return JSON.parse(rep);
+}
+
+function margeFanc(obj,row,obj1){
+  obj1 = obj1 || {}
+  for(var key in row.options){
+    if(row.options[key].func !== undefined){
+      var ary = []
+      var row2 = row
+      var library = row.options[key].library || ""
+      var augAry = row.options[key].augAry || []
+      if(row.options[key].nextJoint){
+        row2 = obj[row.options[key].nextJoint]        
+      }
+      ary.push(row.options[key].func);
+      ary.push(library);
+      ary.push(obj.thisLibrary)
+      if(row.options[key].func.indexOf("Joint") ===  row.options[key].func.length - 5){
+      ary.push(obj)
+      ary.push(row2)
+        }
+      ary.concat(augAry)
+      obj1[key] = searchFunc.apply(this,ary);
+    }else{
+      obj1[key] = row.options[key]
+    }
+  }
+  return obj1
+}
+ 
   function getJointTable(data){
     var keyColumn = data.field.indexOf(data.linkField.jointName)
+    var list = {}
     var ary = loadSpreadSheet(data.spredSheetID,data.sheetName,data.offset)
     var obj ={"spredSheetID" : data.spredSheetID,
               "sheetName"    : data.sheetName,
               "offset"       : data.offset,
               "settings"     : data,
               "thisLibrary"  : data.thisLibrary,
-              "callbacks"    : {},
-              "current"      : "",
-              "next"         : "",
-              "nextArr"      : "",
-              "array"        : ""
+              "prev"         : [],
+              "list"         : [],
+              "callbacks"    : {}
              };
         for (var i = 0; i < data.field.length; i++){//<<<<<<< 
             for(var key in data.linkField){
@@ -678,11 +303,24 @@ function listAugAry(obj,row,val,i){
                     obj[ary[i][keyColumn]] = obj[ary[i][keyColumn]] || {};
                     obj[ary[i][keyColumn]][data.field[j]] = ary[i][j];
                 };
+            };
               if(obj[ary[i][keyColumn]]){
                 obj[ary[i][keyColumn]]["index"] = i + Number(data.offset)
+                obj[ary[i][keyColumn]]["rowName"] = obj.sheetName
+                if(ary[i][keyColumn].lastIndexOf("-") == ary[i][keyColumn].length -2){
+                  var listName = ary[i][keyColumn].split("-")
+                  var num =  listName.pop()
+                  listName = listName.join("-")
+                  list[listName] = list[listName] || []
+                  list[listName][num] = ary[i][keyColumn]
+                }
               }
-            };
         };
+    for(var key in list){
+      if(obj[key] && !obj[key].nextJoint){
+        obj[key].nextJoint = list[key]
+      }
+    }
     return obj;
   }
   
@@ -734,7 +372,7 @@ function listAugAry(obj,row,val,i){
     return Session.getActiveUser().getEmail();
   }
 
-  function setContainer(obj,row,val,aug,jsonData){
+  function setContainer(obj,val,row,aug,jsonData){
     return new SuzunariContainer(val)
   }
 
@@ -747,6 +385,7 @@ function listAugAry(obj,row,val,i){
     this.faviconUrl = "https://dl.dropboxusercontent.com/s/5ksh84yv74revaa/Suzunari.ico";
     this.settings = {};
     this.data = {};
+    this.contensList = ["css","plugins","pluginCss","javascript","jqueryIni","navberHeader","header","content","modal","footer","navbarFooter"]
   
     this.css = ""
     this.plugins = ""

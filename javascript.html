@@ -10,5 +10,12 @@ function pageCanger(num){
 }
 
 //function 
-
+function castRequest(data,jointName,nextJoint){
+  var obj ={"jointName":jointName,
+            "nextJoint":nextJoint,
+            "jsonData" :jasonData[jointName]
+            }
+  obj.jsonData.req = data
+  return obj
+}
 '</script>'
