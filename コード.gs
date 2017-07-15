@@ -17,59 +17,83 @@
  function loadContent(e){
    var obj1 = JSON.parse(e.parameter.jointData);
    var jsonData = obj1.jsonData;  // <<<<<<<< 固定？
-  var obj = getJointTable(jsonData);
+   var obj = getJointTable(jsonData,e);
    var next = obj[obj1[jsonData.linkField.nextJoint]];
-   var paramAry = [this,obj,obj1,next,next.options,next.jsonData]
-   return searchFunc.call(e,next.func,"",obj1.thisLibrary,obj,e,next,next.options,next.jsonData);
+   obj1.rowName = "current"
+   next.rowName = "next"
+   ScriptProperties.setProperty(obj1.jointName,JSON.stringify(obj1))
+   return searchFunc.call(e,next.func,next.library,jsonData.thisLibrary,obj,obj1,next,next.options,next.jsonData);
  }
 
 function setLayoutJoint(obj,val,row,aug,jsonData){
-    var thisObj = searchFunc.call(this,jsonData.func,jsonData.library,obj.thisLibrary,obj,row,val,aug,jsonData);
     var val2 ={}
-    row.rowName = "next"
-    row.prev = "root"
-    val2 = recursiveSearch.call(thisObj,arguments)
-    combine(thisObj,val2);
+    var thisObj = searchFunc.call(this,jsonData.func,jsonData.library,obj.thisLibrary,obj,row,val,aug,jsonData);
     if(jsonData.title !== undefined){thisObj.title = jsonData.title}
     if(jsonData.faviconUrl !== undefined){thisObj.faviconUrl = jsonData.faviconUrl}   
-    return thisObj;
+    if(row.nextJoint){
+      for (var i = 0; i < row.nextJoint.length; i++){     
+        thisObj = combine(thisObj,recursiveSearch.call(thisObj,arguments,i))
+      }
+      return thisObj
+    }
+  return thisObj
   }
 
   function loadSheetJoint(obj,val,row,aug,jsonData){
-    arguments[0] = getJointTable(jsonData)
+    arguments[0] = getJointTable(jsonData,obj.paramE)
     if(row.nextJoint){
-      for (var i = 0; i < row.nextJoint.length; i++){     
+      for (var i = 0; i < row.nextJoint.length; i++){
         return recursiveSearch.call(this,arguments,i)
       }
     }else{
-      return replaceContensTag(obj,row,{}) //<<<?
+      return replaceContensTag(obj,val,row,{}) //<<<?
     }
+  }
+  function setPropertiesJoint(obj,val,row,aug,jsonData){
+    var data = getJointTable(jsonData,obj.paramE)
+    var props = PropertiesService.getScriptProperties();
+    for(var key in data){
+      if(isObject(data[key])){
+      data[key] = JSON.stringify(data[key])
+      }
+    }
+    props.setProperties(data)
+    return {}
   }
 
   function separateJoint(obj,val,row,aug,jsonData){
     var val2 = {}
     if(row.nextJoint){
       for (var i = 0; i < row.nextJoint.length; i++){     
-        val2 = combine(val2,replaceContensTag.call(this,obj,row,recursiveSearch.call(this,arguments,i)))
+        val2 = combine(val2,replaceContensTag(obj,val,row,replaceNextTag(obj,val,row,recursiveSearch.call(this,arguments,i))))
       }
       return val2;
     }else{
-      return replaceContensTag(obj,row,{})
+      return replaceContensTag(obj,val,row,{})
     }
   }
 
   function multipleJoint(obj,val,row,aug,jsonData){
     var val2 = {}
-//    this.header += JSON.stringify(row) + "---mul<br><br>"
     if(row.nextJoint){
       for (var i = 0; i < row.nextJoint.length; i++){
-        val2 = combine(val2,recursiveSearch.call(this,arguments,i));
+        val2 = combine(val2,replaceNextTag(obj,val,row,recursiveSearch.call(this,arguments,i)));
       }
-      return combine(replaceContensTag.call(this,obj,row,val2),val2)
+      return combine(replaceContensTag(obj,val,row,val2),val2)
     }else{
-      return replaceContensTag(obj,row,{})
+      return replaceContensTag(obj,val,row,{})
     }
  }
+
+  function libraryFileTwig(obj,val,row,aug,jsonData){ //>>>lib?
+    if(aug.key){
+      var obj1 ={};
+      obj1[aug.key] = replaceTag(HtmlService.createHtmlOutputFromFile(aug.fileName).getContent());
+      return obj1;
+    }else{
+      return replaceTag(HtmlService.createHtmlOutputFromFile(aug.fileName).getContent());
+    }
+  }
 
   function jsonStringifyTwig(obj,val,row,aug,jsonData){
     var val2 = {}
@@ -79,17 +103,7 @@ function setLayoutJoint(obj,val,row,aug,jsonData){
       }
     return JSON.stringify(val2); //>>>どこに？
     }else{
-      return JSON.stringify(replaceContensTag(obj,row,{})) //>>>どこに？
-    }
-  }
-
-  function libraryFileTwig(obj,val,row,aug,jsonData){ //>>>lib?
-    if(aug.key){
-      var obj1 ={};
-      obj1[aug.key] = replaceTag(HtmlService.createHtmlOutputFromFile(aug.fileName).getContent());
-      return obj1;
-    }else{
-      return replaceTag(HtmlService.createHtmlOutputFromFile(aug.fileName).getContent());
+      return JSON.stringify(replaceContensTag(obj,val,row,{})) //>>>どこに？
     }
   }
 
@@ -104,39 +118,45 @@ function setLayoutJoint(obj,val,row,aug,jsonData){
         }
   }
 
-  function requestLibrary(req) { //<<< cng!
-    var  lib = libraryFanc("suzunariCatchRequest",castLibName(req.libName),4);
-    return lib(req);
-  }
-
   function combine(obj1,obj2,opt_ward){
     var ward = opt_ward || ""
     if(isObject(obj1) && isObject(obj2)){
       for(var key in obj2){
-        if(typeof (obj2[key]) == "string" || obj2[key] instanceof String){
-          if(obj1[key] !== undefined && obj1[key]){
-            obj1[key] += ward + obj2[key];
+        if(key != "escape"){
+          if(typeof (obj2[key]) == "string" || obj2[key] instanceof String){
+            if(obj1[key] !== undefined && obj1[key]){
+              obj1[key] += ward + obj2[key];
+            }else{
+              obj1[key] = obj2[key];
+            }
+          }else if(isObject(obj2[key])){
+            obj1[key] = marge(obj1[key],obj2[key])
+          }else if(Object.prototype.toString.call(obj2[key]) === '[object Array]'){
+            if(obj1[key] !== undefined && obj1[key] && Object.prototype.toString.call(obj1[key]) === '[object Array]'){
+              obj1[key].concat(obj2[key]);
+            }else{
+              obj1[key] = obj2[key];
+            }        
           }else{
-            obj1[key] = obj2[key];
+          obj1[key] = obj2[key];
           }
-        }else if(isObject(obj2[key])){
-          obj1[key] = marge(obj1[key],obj2[key])
-  //        if(obj1[key] !== undefined && obj1[key]){
-  //         obj1[key] = combine(obj1[key],obj2[key],opt_ward);
-  //        }else{
-  //          obj1[key] = marge(obj1[key],obj2[key])
-  //        }
-        }else if(Object.prototype.toString.call(obj2[key]) === '[object Array]'){
-          if(obj1[key] !== undefined && obj1[key] && Object.prototype.toString.call(obj1[key]) === '[object Array]'){
-            obj1[key].concat(obj2[key]);
-          }else{
-            obj1[key] = obj2[key];
-          }        
+        }else{ 
+            obj1["escape"] = obj2["escape"]
         }
       }
     return obj1;
     }
   }
+function recursiveMarge(obj1,obj2){
+  for(var key in obj2){
+    if(obj1[key] !== undefined && obj1[key]){
+      obj1[key] = recursiveMarge(obj1[key],obj2[key]);
+    }else{
+      obj1[key] = obj2[key]
+    }
+  }
+  return obj1
+}
 
   function combineArrayObject(aryObj1,aryObj2){
       if(aryObj1.length > aryObj2.length){
@@ -174,6 +194,17 @@ function setLayoutJoint(obj,val,row,aug,jsonData){
         }
   }
 
+  function requestSearch(req) { //<<< cng! here
+    var props = PropertiesService.getScriptProperties();
+    var joint = JSON.parse(props.getProperty(req.jointName))
+//    return JSON.stringify(req)
+    return JSON.stringify(props.getProperty(req.jointName))
+//    var  lib = libraryFanc("suzunariCatchRequest",castLibName(req.libName),4);
+//    return searchFunc.call(e,next.func,next.library,jsonData.thisLibrary,obj,obj1,next,next.options,next.jsonData);
+  }
+function catchRequestJoint(obj,val,row,aug,jsonData){
+}
+
  function recursiveSearch(arg,i){
    var args = Array.prototype.slice.call(arguments[0]);
    args = JSON.parse(JSON.stringify(args))
@@ -203,74 +234,110 @@ function setLayoutJoint(obj,val,row,aug,jsonData){
              lib = row.options[row.jointName].library
            }
          }
-         var libfunc = libraryApply(func,lib);
-         if(libfunc !== undefined) {
-           if(obj[row.jointName])obj[row.jointName].rowName = "current"
-           if(next)next.rowName = "next"
-           next.prev = row.jointName
-           var ary = [obj,
-                      row,
-                      next,
-                      next.options,
-                      next.jsonData]
-           for (var k = 5; k < arguments.length; k++){
-             ary.push(arguments[k])
-           }                  
-           if(obj.callbacks){
-             for(var key in obj.callbacks){
-               obj.callbacks[key].apply(this,ary);
-             }
+       var libfunc = libraryApply(func,lib);
+       if(libfunc !== undefined) {
+         if(obj[row.jointName])obj[row.jointName].rowName = "current"
+         if(next)next.rowName = "next"
+         obj[row.nextJoint[i]].prev = row.jointName
+         var ary = [obj,
+                    row,
+                    next,
+                    next.options,
+                    next.jsonData]
+         for (var k = 5; k < arguments.length; k++){
+           ary.push(arguments[k])
+         }                  
+         if(obj.callbacks){
+           for(var key in obj.callbacks){
+             obj.callbacks[key].apply(this,ary);
            }
-           return libfunc.call(this,ary);
          }
-   }else{
-     return replaceContensTag(obj,obj[row.nextJoint[i]],{})
+         return libfunc.call(this,ary);
+       }
+     }else{
+       return replaceContensTag(obj,row,obj[row.nextJoint[i]],{})
      }
    }
  }
 
-function replaceContensTag(obj,row,ret){
-  var obj1 = margeFanc(obj,row,ret)
-  obj1.nameSpace = obj.sheetName + "-" + row.index
-  obj1.spredSheetID = obj.spredSheetID
-  obj1.sheetName = obj.sheetName
-  obj1.offset = obj.offset
-  obj1.jointName = row.jointName
-  obj1.nextJoint = row.nextJoint
-  obj1.index = row.index
-  obj1.prev = row.prev
-  var rep = replaceTemplateTag(JSON.stringify(row.jsonData),obj1)
-  return JSON.parse(rep);
+function replaceContensTag(obj,val,row,ret){
+  var obj1 = margeFanc(obj,val,row,ret)
+  internalReplaceWord.call(obj1,obj,val,row)
+  var rep = JSON.parse(replaceTemplateTag(JSON.stringify(row.jsonData),obj1))
+  rep.escape = row.options
+  return rep;
 }
 
-function margeFanc(obj,row,obj1){
-  obj1 = obj1 || {}
-  for(var key in row.options){
-    if(row.options[key].func !== undefined){
+function replaceNextTag(obj,val,row,next){
+  var obj1 = margeFanc(obj,val,row,next)
+  internalReplaceWord.call(obj1,obj,val,row)
+  var rep = JSON.parse(replaceTemplateTag(JSON.stringify(next),obj1))
+  return rep;
+}
+
+function internalReplaceWord(obj,val,row){
+  this.nameSpace = obj.sheetName + "-" + row.rowIndex + "-" + row.index
+  this.spredSheetID = obj.spredSheetID
+  this.sheetName = obj.sheetName
+  this.offset = obj.offset
+  this.jointName = row.jointName
+  this.nextJoint = row.nextJoint
+  this.index = row.index
+  this.rowIndex = row.rowIndex
+  this.prev = row.prev
+  if(obj.paramE){
+    for(var key in obj.paramE.parameter){
+      this[key] = obj.paramE.parameter[key]
+    }
+  }
+}
+
+function margeFanc(obj,val,row,obj1){
+  var obj2 = {}
+  obj1 = marge(obj1,row.options)
+  obj1 = marge(obj1,obj1.escape)
+//  obj1 = obj1 || {}
+  for(var key in obj1){
+    if(obj1[key].func !== undefined && key !== row.jointName){
       var ary = []
       var row2 = row
-      var library = row.options[key].library || ""
-      var augAry = row.options[key].augAry || []
-      if(row.options[key].nextJoint){
-        row2 = obj[row.options[key].nextJoint]        
+      var library = obj1[key].library || ""
+      var augAry = obj1[key].augAry || []
+      if(obj1[key].nextJoint){
+        row2 = obj[obj1[key].nextJoint]        
       }
-      ary.push(row.options[key].func);
+      ary.push(obj1[key].func);
       ary.push(library);
       ary.push(obj.thisLibrary)
-      if(row.options[key].func.indexOf("Joint") ===  row.options[key].func.length - 5){
+      if(obj1[key].func.indexOf("Joint") ===  obj1[key].func.length - 5){
       ary.push(obj)
       ary.push(row2)
         }
       ary.concat(augAry)
-      obj1[key] = searchFunc.apply(this,ary);
+      obj2[key] = searchFunc.apply(this,ary);
+    }else if(obj1[key].parent !== undefined){
+      obj2[key] = val.prev//searchParent(obj,val,row,obj1[key].parent)
+    }else if(obj1[key].child !== undefined){
+      obj2[key] = searchChild(obj,val,row,obj1[key])
     }else{
-      obj1[key] = row.options[key]
+      obj2[key] = obj1[key]
     }
   }
-  return obj1
+  return obj2
+}
+
+function searchParent(obj,val,row,obj1){ //<<<
+  if(obj1.parent !== undefined && val.prev == "loadSheetJoint"){
+    return searchParent(obj,obj[val.prev],val,obj1.parent)
+  }else{
+//    var a = obj["page3"].prev
+//    return a//JSON.stringify(a.jointName)
+  }
+}
+function searchChild(obj,val,row,obj1){ //<<<
 }
  
-  function getJointTable(data){
+  function getJointTable(data,paramE){
     var keyColumn = data.field.indexOf(data.linkField.jointName)
     var list = {}
     var ary = loadSpreadSheet(data.spredSheetID,data.sheetName,data.offset)
@@ -279,11 +346,12 @@ function margeFanc(obj,row,obj1){
               "offset"       : data.offset,
               "settings"     : data,
               "thisLibrary"  : data.thisLibrary,
+              "paramE"       : paramE,
               "prev"         : [],
               "list"         : [],
               "callbacks"    : {}
              };
-        for (var i = 0; i < data.field.length; i++){//<<<<<<< 
+        for (var i = 0; i < data.field.length; i++){
             for(var key in data.linkField){
                 if(data.field[i] == data.linkField[key]){
                     data.field[i] = key;
@@ -305,7 +373,7 @@ function margeFanc(obj,row,obj1){
                 };
             };
               if(obj[ary[i][keyColumn]]){
-                obj[ary[i][keyColumn]]["index"] = i + Number(data.offset)
+                obj[ary[i][keyColumn]]["rowIndex"] = i + Number(data.offset)
                 obj[ary[i][keyColumn]]["rowName"] = obj.sheetName
                 if(ary[i][keyColumn].lastIndexOf("-") == ary[i][keyColumn].length -2){
                   var listName = ary[i][keyColumn].split("-")
@@ -376,7 +444,7 @@ function margeFanc(obj,row,obj1){
     return new SuzunariContainer(val)
   }
 
-  function SuzunariContainer(parameter){
+  function SuzunariContainer(parameter){ // <<<< cng
 
   // contens 
   
@@ -415,7 +483,7 @@ function margeFanc(obj,row,obj1){
       html.jqueryIni = this.jqueryIni;
     
       html.navbarHeader = this.navbarHeader
-      html.header = this.header + "</div>";
+      html.header = this.header// + "</div>";
       html.modal = this.modal;
       html.content = this.content;   
       html.footer = this.footer;

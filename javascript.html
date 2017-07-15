@@ -1,4 +1,43 @@
 '<script>'
+$.fn.serializeObject = function()
+{
+    var object = {};
+    var array = this.serializeArray();
+    
+    $.each(array, function() {
+        if (object[this.name] !== undefined) {
+            if (!object[this.name].push) {
+                object[this.name] = [object[this.name]];
+            }
+            object[this.name].push(this.value || '');
+        } else {
+            object[this.name] = this.value || '';
+        }
+    });
+    
+    return object;
+};
+
+function Vertically(bool){
+  if(bool){
+    $('.btn-cng').children("button").removeClass("btn-lg");
+    $('.btn-cng').children("button").addClass("btn-xxl");
+    $('.v-zoom').css("zoom","250%");
+    $(".w-size").removeClass("col-sm-6");
+    $(".w-size").addClass("col-xs-12");
+ //   $(".main-table").css("background-size","400px auto");
+ //   $(".main-table").css("background-image","url('https://dl.dropboxusercontent.com/s/xufhy5a994akotg/a300png.png')");
+  }else{
+    $('.btn-cng').children("button").removeClass("btn-xxl");
+    $('.btn-cng').children("button").addClass("btn-lg");
+    $('.v-zoom').css("zoom","100%");
+    $(".w-size").removeClass("col-xs-12");
+    $(".w-size").addClass("col-sm-6");
+  //  $(".main-table").css("background-size","1200px auto");
+  //  $(".main-table").css("background-image","url('https://dl.dropboxusercontent.com/s/ulmuzszz2lwvlyo/advanex_logo2.png')");
+  };
+}
+
 function pageCanger(num){
   $('.page-cng').css('display','none');  
   $('.page-' + num).css('display','block');
@@ -10,12 +49,10 @@ function pageCanger(num){
 }
 
 //function 
-function castRequest(data,jointName,nextJoint){
-  var obj ={"jointName":jointName,
-            "nextJoint":nextJoint,
-            "jsonData" :jasonData[jointName]
+function castRequest(req,jointName){
+  var obj = {"jointName":jointName,
+            "req" : req
             }
-  obj.jsonData.req = data
   return obj
 }
 '</script>'
