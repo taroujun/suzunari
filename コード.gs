@@ -17,6 +17,7 @@
  function loadContent(e){
    var obj1 = JSON.parse(e.parameter.jointData);
    var obj = getJointTable(obj1,e);
+   obj1 = obj.table[obj1.jointName]
    var next = obj.table[obj1[obj1.jsonData.linkField.nextJoint]];
    obj.log[obj1.jointName] = JSON.parse(JSON.stringify(obj1))
    obj1.rowName = "current"
@@ -35,7 +36,7 @@ function setLayoutJoint(obj,val,row,options,jsonData){
       for (var i = 0; i < row.nextJoint.length; i++){     
         thisObj = combine(thisObj,recursiveSearch.call(thisObj,arguments,i))
       }
-      thisObj.content += replaceTag(thisObj.jqueryIni)//JSON.stringify(thisObj.data)
+    //  thisObj.content += replaceTag(thisObj.jqueryIni)//JSON.stringify(thisObj.data)
       return thisObj
     }
   return thisObj
@@ -570,12 +571,12 @@ function searchChild(obj,val,row,obj1){ //<<<
   return {}
 }
  
-  function getJointTable(obj,paramE,obj1){
-    var data = obj.jsonData
+  function getJointTable(row,paramE,obj1){
+    var data = row.jsonData
     var parent = {}
-    if(obj.nextJoint){
-      for (var i = 0; i < obj.nextJoint.length; i++){
-        parent[obj.nextJoint[i]] = obj.jointName
+    if(row.nextJoint){
+      for (var i = 0; i < row.nextJoint.length; i++){
+        parent[row.nextJoint[i]] = row.jointName
       }
     }    
     obj1 = obj1 || {}
@@ -592,15 +593,65 @@ function searchChild(obj,val,row,obj1){ //<<<
     obj1["list"]         = [],
     obj1["callbacks"]    = obj1.callcacks || {}
               
-    obj1.table = rowObjectJoint(ary,keyColumn,data,parent)
+    obj1.table = rowObjectJoint(ary,keyColumn,row,parent)
     return obj1;
   }
 
-function rowObjectJoint(ary,keyColumn,data,opt_parent){
+  function getJointTable2(obj,row,paramE){
+    var data = row.jsonData
+    var parent = {}
+    if(row.nextJoint){
+      for (var i = 0; i < row.nextJoint.length; i++){
+        parent[row.nextJoint[i]] = row.jointName
+      }
+    }    
+    obj = obj || {}
+    obj.log = obj.log || {}
+    var keyColumn = data.field.indexOf(data.linkField.jointName)
+ /*   var field = row.jsonData.field
+    for (var i = 0; i < field.length; i++){
+      var obj1 = {}
+      obj1["fiels"] = field[i]
+      if(row.jsonData.linkField[field[i]]) obj1["linkField"] = row.jsonData.linkField[field[i]]
+      if(row.jsonData.jsonField[field[i]]) obj1["jsonField"] = row.jsonData.jsonField[field[i]]
+      field[i] = obj1
+    }*/
+    var ary = loadSpreadSheet(data.spredSheetID,data.sheetName,data.offset)
+    obj["spredSheetID"] = data.spredSheetID
+    obj["sheetName"]    = data.sheetName
+    obj["offset"]       = data.offset
+    obj["settings"]     = data
+    obj["thisLibrary"]  = data.thisLibrary
+    obj["paramE"]       = paramE
+    obj["prev"]         = []
+    obj["list"]         = []
+    obj["callbacks"]    = obj.callcacks || {}
+              
+    obj.table = rowObjectJoint2(ary,keyColumn,row,parent)
+    return obj;
+  }
+
+
+function selfDumpJoint(obj,val,row,options,jsonData){
+  var joint =getJointTable2(obj,row)
+  var dump = "<div class='row'><div class='panel panel-default'><div class='panel-heading strong'>Dump</div><div class='panel-body text-left'>"
+  for(var key in joint.table){
+  dump += key + ">>>" + JSON.stringify(joint.table[key]) + "<br><br>"
+  }
+  dump += "</div></div></div>"
+this.content += dump
+  return {"escape":"dump"}
+}
+
+function rowObjectJoint2(ary,keyColumn,row,opt_parent,opt_child){
   var obj = {}
-  var list = {}
   var index = {}
+  var data = row.jsonData
   var parent = opt_parent || {}
+  var child = opt_child || {}
+  var parentName = {}
+  var childName = {}
+  obj[row.jointName] = row
   if(data.linkField !== undefined){
     for (var i = 0; i < data.field.length; i++){
       for(var key in data.linkField){
@@ -611,56 +662,175 @@ function rowObjectJoint(ary,keyColumn,data,opt_parent){
     }
   }
   for (var i = 0; i < ary.length; i++){
+    var name = "R" + (i + (data.offset *1)) + ary[i][keyColumn]
+    var jointName = ary[i][keyColumn]
+    if(ary[i][keyColumn]){
     for (var j = 0; j < ary[i].length; j++){
       if(data.jsonField !== undefined && data.jsonField.indexOf(data.field[j]) >= 0 ){
-        obj[ary[i][keyColumn]] = obj[ary[i][keyColumn]] || {};
+        obj[name] = obj[name] || {};
         if(ary[i][j] !== undefined && ary[i][j]){
-          obj[ary[i][keyColumn]][data.field[j]] = JSON.parse(ary[i][j]);
+          obj[name][data.field[j]] = JSON.parse(ary[i][j]);
         }else{
-          obj[ary[i][keyColumn]][data.field[j]] = ary[i][j] 
+          obj[name][data.field[j]] = ary[i][j] 
         };
       }else{
-        obj[ary[i][keyColumn]] = obj[ary[i][keyColumn]] || {};
-        obj[ary[i][keyColumn]][data.field[j]] = ary[i][j];
+        obj[name] = obj[name] || {};
+        obj[name][data.field[j]] = ary[i][j];
       };
     };
-    if(obj[ary[i][keyColumn]]){
-      obj[ary[i][keyColumn]]["rowIndex"] = i + Number(data.offset)
-      obj[ary[i][keyColumn]]["rowName"] = obj.sheetName
-      if(obj[ary[i][keyColumn]].nextJoint){
-        for (var k = 0; k < obj[ary[i][keyColumn]].nextJoint.length; k++){
-          var obj2 = {}
-          parent[obj[ary[i][keyColumn]].nextJoint[k]] = ary[i][keyColumn]
-          index[obj[ary[i][keyColumn]].nextJoint[k]] = k
+    if(obj[name]){
+      if(obj[name]["options"][jointName] !== undefined && obj[name]["options"][jointName]){
+      for(var key2 in obj[name]["options"][jointName]){
+        if(!obj[name][key2] || obj[name][key2] == undefined){
+          obj[name][key2] = obj[name]["options"][jointName][key2]
         }
       }
-      if(ary[i][keyColumn].lastIndexOf("-") == ary[i][keyColumn].length -2){
-        var listName = ary[i][keyColumn].split("-")
+      delete obj[name]["options"][jointName]
+    }
+      parentName[jointName] = name
+      obj[name]["rowIndex"] = i + Number(data.offset)
+      obj[name]["rowName"] = obj.sheetName
+      if(obj[parent[jointName]] !== undefined && obj[parent[jointName]]){
+        obj[name].parent = (parent[jointName] !== undefined && parent[jointName]) ? parent[jointName] : ""
+        obj[name].index = (index[jointName] !== undefined && index[jointName]) ? index[jointName] : 0
+        if(obj[parent[jointName]]["nextJoint"].indexOf(jointName) >= 0){
+          obj[parent[jointName]]["nextJoint"][obj[parent[jointName]]["nextJoint"].indexOf(jointName)] = name
+        }else{
+          obj[parent[jointName]]["nextJoint"].push(name)
+        }
+      }else{
+        child[jointName] = name
+      }
+      if(obj[name].nextJoint){
+        var nameAry = obj[name].nextJoint
+        if(childName[jointName] !== undefined && childName[jointName]){
+          nameAry = (childName[jointName].length > nameAry.length) ? childName[jointName] : obj[name].nextJoint
+        }
+        for (var k = 0; k < nameAry.length; k++){
+          parent[obj[name].nextJoint[k]] = name
+          index[obj[name].nextJoint[k]] = k
+          if(child[obj[name].nextJoint[k]]){
+            obj[name].nextJoint[k] = child[obj[name].nextJoint[k]]            
+          }else if(childName[jointName] !== undefined && childName[jointName] && childName[jointName][k]){
+            obj[name].nextJoint[k] = childName[jointName][k]
+          }
+        }
+      }else if(childName[jointName] !== undefined && childName[jointName]){
+        obj[name].nextJoint = childName[jointName]
+      }
+      if(name.lastIndexOf("-") == name.length -2){
+        var listName = jointName.split("-")
         var num =  listName.pop()
         listName = listName.join("-")
-        list[listName] = list[listName] || []
-        list[listName][num] = ary[i][keyColumn]
-        parent[ary[i][keyColumn]] = listName
+        obj[name].index = num
+        if(parentName[listName] !== undefined && parentName[listName]){
+          obj[name].parent = parentName[listName]
+          obj[parentName[listName]]["nextJoint"] = obj[parentName[listName]]["nextJoint"] || []
+          obj[parentName[listName]]["nextJoint"][num] = name
+        }else{
+          childName[listName] = childName[listName] || []
+          childName[listName][num] = name
+        }
       }
     }
   };
-  for(var key in obj){
-    if(obj[key]["options"][key] !== undefined && obj[key]["options"][key]){
-      for(var key2 in obj[key]["options"][key]){
-        if(!obj[key][key2] || obj[key][key2] == undefined){
-          obj[key][key2] = obj[key]["options"][key][key2]
+  }; 
+  return obj
+}
+
+
+function rowObjectJoint(ary,keyColumn,row,opt_parent,opt_child){
+  var obj = {}
+  var index = {}
+  var data = row.jsonData
+  var parent = opt_parent || {}
+  var child = opt_child || {}
+  var parentName = {}
+  var childName = {}
+  obj[row.jointName] = row
+  if(data.linkField !== undefined){
+    for (var i = 0; i < data.field.length; i++){
+      for(var key in data.linkField){
+        if(data.field[i] == data.linkField[key]){
+          data.field[i] = key;
         }
       }
-      delete obj[key]["options"][key]
-    }
-    obj[key]["parent"] = parent[key]
-    obj[key]["index"] = index[key]
-    obj[key]["nameSpace"] = data.sheetName + "R" + obj[key].rowIndex + "I" + obj[key].index
-    if(list[key] !== undefined && !obj[key].nextJoint){
-      obj[key].nextJoint = obj[key].nextJoint || {}
-      obj[key].nextJoint = list[key]
     }
   }
+  for (var i = 0; i < ary.length; i++){
+    var name = "R" + (i + (data.offset *1)) + ary[i][keyColumn]
+    var jointName = ary[i][keyColumn]
+    if(ary[i][keyColumn]){
+    for (var j = 0; j < ary[i].length; j++){
+      if(data.jsonField !== undefined && data.jsonField.indexOf(data.field[j]) >= 0 ){
+        obj[name] = obj[name] || {};
+        if(ary[i][j] !== undefined && ary[i][j]){
+          obj[name][data.field[j]] = JSON.parse(ary[i][j]);
+        }else{
+          obj[name][data.field[j]] = ary[i][j] 
+        };
+      }else{
+        obj[name] = obj[name] || {};
+        obj[name][data.field[j]] = ary[i][j];
+      };
+    };
+    if(obj[name]){
+      if(obj[name]["options"][jointName] !== undefined && obj[name]["options"][jointName]){
+      for(var key2 in obj[name]["options"][jointName]){
+        if(!obj[name][key2] || obj[name][key2] == undefined){
+          obj[name][key2] = obj[name]["options"][jointName][key2]
+        }
+      }
+      delete obj[name]["options"][jointName]
+    }
+      parentName[jointName] = name
+      obj[name]["rowIndex"] = i + Number(data.offset)
+      obj[name]["rowName"] = obj.sheetName
+      if(obj[parent[jointName]] !== undefined && obj[parent[jointName]]){
+      obj[name].parent = (parent[jointName] !== undefined && parent[jointName]) ? parent[jointName] : ""
+      obj[name].index = (index[jointName] !== undefined && index[jointName]) ? index[jointName] : 0
+        if(obj[parent[jointName]]["nextJoint"].indexOf(jointName) >= 0){
+          obj[parent[jointName]]["nextJoint"][obj[parent[jointName]]["nextJoint"].indexOf(jointName)] = name
+        }else{
+          obj[parent[jointName]]["nextJoint"].push(name)
+        }
+      }else{
+        child[jointName] = name
+      }
+      if(obj[name].nextJoint){
+        var nameAry = obj[name].nextJoint
+        if(childName[jointName] !== undefined && childName[jointName]){
+          nameAry = (childName[jointName].length > nameAry.length) ? childName[jointName] : obj[name].nextJoint
+        }
+        for (var k = 0; k < nameAry.length; k++){
+          parent[obj[name].nextJoint[k]] = name
+          index[obj[name].nextJoint[k]] = k
+          if(child[obj[name].nextJoint[k]]){
+            obj[name].nextJoint[k] = child[obj[name].nextJoint[k]]            
+          }else if(childName[jointName] !== undefined && childName[jointName] && childName[jointName][k]){
+            obj[name].nextJoint[k] = childName[jointName][k]
+          }
+        }
+      }else if(childName[jointName] !== undefined && childName[jointName]){
+        obj[name].nextJoint = childName[jointName]
+      }
+      if(name.lastIndexOf("-") == name.length -2){
+        var listName = jointName.split("-")
+        var num =  listName.pop()
+        listName = listName.join("-")
+        obj[name].index = num
+        if(parentName[listName] !== undefined && parentName[listName]){
+          obj[name].parent = parentName[listName]
+          obj[parentName[listName]]["nextJoint"] = obj[parentName[listName]]["nextJoint"] || []
+          obj[parentName[listName]]["nextJoint"][num] = name
+        }else{
+          childName[listName] = childName[listName] || []
+          childName[listName][num] = name
+        }
+      }
+    }
+  };
+  }; 
   return obj
 }
 
