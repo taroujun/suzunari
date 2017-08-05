@@ -16,10 +16,10 @@
 
  function loadContent(e){
    var obj1 = JSON.parse(e.parameter.jointData);
-   var obj = getJointTable(obj1,e);
+   var obj = getJointTable({},obj1,e);
    obj1 = obj.table[obj1.jointName]
    var next = obj.table[obj1[obj1.jsonData.linkField.nextJoint]];
-   obj.log[obj1.jointName] = JSON.parse(JSON.stringify(obj1))
+   obj.table[obj1.jointName] = JSON.parse(JSON.stringify(obj1))
    obj1.rowName = "current"
    next.rowName = "next"
 
@@ -28,22 +28,47 @@
 
 function setLayoutJoint(obj,val,row,options,jsonData){
     var val2 ={}
-    var thisObj = searchFunc.call(this,jsonData.func,jsonData.library,obj.thisLibrary,obj,row,val,options,jsonData);
-    if(jsonData.title !== undefined){thisObj.title = jsonData.title}
-    obj.log[row.jointName] = JSON.parse(JSON.stringify(row))
-    if(jsonData.faviconUrl !== undefined){thisObj.faviconUrl = jsonData.faviconUrl}   
+    var thisObj = setContainer(obj,row,val,options,jsonData)//searchFunc.call(this,jsonData.func,jsonData.library,obj.thisLibrary,obj,row,val,options,jsonData);
+//    if(jsonData.title !== undefined){thisObj.title = jsonData.title}
+//    obj.log[row.jointName] = JSON.parse(JSON.stringify(row))
+//    if(jsonData.faviconUrl !== undefined){thisObj.faviconUrl = jsonData.faviconUrl}   
     if(row.nextJoint){
       for (var i = 0; i < row.nextJoint.length; i++){     
         thisObj = combine(thisObj,recursiveSearch.call(thisObj,arguments,i))
       }
-    //  thisObj.content += replaceTag(thisObj.jqueryIni)//JSON.stringify(thisObj.data)
-      return thisObj
     }
+  if(this.parameter.dump !== undefined){
+    return contentsDump.call(this,thisObj,JSON.parse(this.parameter.dump))
+  }else{
   return thisObj
   }
+}
+
+function contentsDump(thisObj,param){
+  var html = HtmlService.createTemplateFromFile('dumpDone');
+  var ary = ["css",thisObj.css]
+//  ary.push(["css",this.css])
+//  var param = JSON.parse(this.parameter.dump)
+  html.dump = param.sheetName//JSON.stringify(thisObj.css)
+  writeSpreadsheet(param.spredSheetID,param.sheetName,ary,true,1,1);
+  return html
+}
 
   function changeSheetJoint(obj,val,row,options,jsonData){
-    arguments[0] = getJointTable(row,obj.paramE,obj)
+    arguments[0] = getJointTable.call(this,obj,row,obj.paramE)
+    if(row.nextJoint){
+      for (var i = 0; i < row.nextJoint.length; i++){
+        return recursiveSearch.call(this,arguments,i)
+      }
+    }else{
+      return replaceContensTag(obj,jsonData,row,{}) //<<<?
+    }
+  }
+
+  function setDataJoint(obj,val,row,options,jsonData){
+    var joints = getJointTable.call(this,obj,row,obj.paramE)
+    arguments[0] = joints
+    this.data.push({"joints":joints,"next":row.nextJoint})
     if(row.nextJoint){
       for (var i = 0; i < row.nextJoint.length; i++){
         return recursiveSearch.call(this,arguments,i)
@@ -55,7 +80,7 @@ function setLayoutJoint(obj,val,row,options,jsonData){
 
   function setPropertiesJoint(obj,val,row,options,jsonData){
     var data = {}
-    data.joints = JSON.stringify(getJointTable(row,obj.paramE,obj))
+    data.joints = JSON.stringify(getJointTable.call(this,obj,row,obj.paramE))
     var props = PropertiesService.getScriptProperties();
     data.row = JSON.stringify(row)
     props.setProperties(data)
@@ -139,7 +164,7 @@ function writeSheetJoint(obj,val,row,options,jsonData){
     }
   }
   writeSpreadsheet(jsonData.spredSheetID,jsonData.sheetName,ary,true,jsonData.startRow,jsonData.startCol);
-  return val.jointName + "=" + row.parent
+  return jsonData.spredSheetID
 }
 
 function stackObjectJoint(obj,val,row,options,jsonData){
@@ -403,17 +428,17 @@ function writeSpreadsheet(ssId,sheetName,data,insert,startRow,startCol){ //inser
     joint.rowName = "next"
     joint.prev = row.jointName
     joint.parent = row.jointName
-    obj.log[joint.jointName] = joint
+    obj.table[joint.jointName] = joint
     return searchFunc.call(req,joint.func,joint.library,obj.thisLibrary,obj,row,joint,joint.options,joint.jsonData);
   }
 
  function recursiveSearch(arg,i){
-   var args = Array.prototype.slice.call(arguments[0]);
-   args = JSON.parse(JSON.stringify(args))
-   var args2 = Array.prototype.slice.call(arguments);
    var i = i || 0
-   args = args.concat(args2)
-   for (var j = 0; j < arguments[0].length; j++){
+   var args = JSON.parse(JSON.stringify(Array.prototype.slice.call(arguments[0])));
+ //  args = args.concat(JSON.parse(JSON.stringify(Array.prototype.slice.call(arguments))))
+ //  args = JSON.parse(JSON.stringify(args))
+ //  var args2 = Array.prototype.slice.call(arguments);
+   for (var j = 0; j < args.length; j++){
      if(isObject(args[j])){
        if(args[j].callbacks !== undefined){
          var obj = args[j]
@@ -426,17 +451,16 @@ function writeSpreadsheet(ssId,sheetName,data,insert,startRow,startCol){ //inser
    }
    if(row && row !== undefined){
      if(obj.table[row.nextJoint[i]].func){
-         var func = obj.table[row.nextJoint[i]].func
-         var next = obj.table[row.nextJoint[i]]
-         var lib = ""
-         lib = row.library !== undefined  && row.library !== obj.thisLibrary && row.library
-       var libfunc = libraryApply(func,lib);
+    //     var func = obj.table[row.nextJoint[i]].func
+    //     var next = obj.table[row.nextJoint[i]]
+    //     var lib = ""
+    //     lib = row.library !== undefined  && row.library !== obj.thisLibrary && row.library
+         var libfunc = libraryApply(obj.table[row.nextJoint[i]].func);
        if(libfunc !== undefined) {
          if(obj.table[row.jointName])obj.table[row.jointName].rowName = "current"
-         if(next)next.rowName = "next"
-         obj.table[row.nextJoint[i]].prev = row.jointName //<<
-         obj.log[row.nextJoint[i]] = JSON.parse(JSON.stringify(obj.table[row.nextJoint[i]]))
-         
+         if(obj.table[row.nextJoint[i]])obj.table[row.nextJoint[i]].rowName = "next"
+    //     obj.table[row.nextJoint[i]].prev = row.jointName //<<
+    //     obj.log[row.nextJoint[i]] = JSON.parse(JSON.stringify(obj.table[row.nextJoint[i]]))
          var ary = [obj,
                     obj.table[row.jointName],
                     obj.table[row.nextJoint[i]],
@@ -451,13 +475,13 @@ function writeSpreadsheet(ssId,sheetName,data,insert,startRow,startCol){ //inser
            }
          }
        var ret = libfunc.call(this,ary);
-       ret.escape = obj.log[row.nextJoint[i]].options
+       ret.escape = obj.table[row.nextJoint[i]].options
          return ret
        }
      }else{
-       obj.log[row.nextJoint[i]] = JSON.parse(JSON.stringify(obj.table[row.nextJoint[i]]))
+       obj.table[row.nextJoint[i]] = JSON.parse(JSON.stringify(obj.table[row.nextJoint[i]]))
        var ret = replaceContensTag(obj,obj.table[row.nextJoint[i]].jsonData,obj.table[row.nextJoint[i]],{})
-       ret.escape = obj.log[row.nextJoint[i]].options
+       ret.escape = obj.table[row.nextJoint[i]].options
          return ret
      }
    }
@@ -495,18 +519,19 @@ function margeFanc(obj,row,obj1){
       var ary = []
       var row2 = row
       var library = obj1[key].library || ""
-      var augAry = obj1[key].augAry || []
+      var argAry = obj1[key].argAry || ""
+      var thisLibrary = obj.thisLibrary || ""
       if(obj1[key].nextJoint){
         row2 = obj[obj1[key].nextJoint]        
       }
       ary.push(obj1[key].func);
       ary.push(library);
-      ary.push(obj.thisLibrary)
+      ary.push(thisLibrary)
       if(obj1[key].func.indexOf("Joint") ===  obj1[key].func.length - 5){
       ary.push(obj)
       ary.push(row2)
         }
-      ary.concat(augAry)
+      ary.push(argAry)
       obj2[key] = searchFunc.apply(this,ary);
     }else if(obj1[key].parent !== undefined){
       var ret = searchParent(obj,row,obj1[key])
@@ -533,7 +558,7 @@ function margeFanc(obj,row,obj1){
 }
 
 function internalReplaceWord(obj,row){
-  this.nameSpace = row.nameSpace//obj.sheetName + "-" + row.rowIndex + "-" + row.index
+  this.nameSpace = row.nameSpace//obj.sheetName + "R" + row.rowIndex + "I" + row.index
   this.spredSheetID = obj.spredSheetID
   this.sheetName = obj.sheetName
   this.offset = obj.offset
@@ -541,7 +566,7 @@ function internalReplaceWord(obj,row){
   this.nextJoint = row.nextJoint
   this.index = row.index
   this.rowIndex = row.rowIndex
-  this.prev = row.prev
+//  this.prev = row.prev
   if(obj.paramE){
     for(var key in obj.paramE.parameter){
       this[key] = obj.paramE.parameter[key]
@@ -550,9 +575,9 @@ function internalReplaceWord(obj,row){
 }
 
 function searchParent(obj,row,obj1){ //<<<
-  if(obj1.parent !== undefined && obj.log[row.parent] !== undefined){
-    return searchParent(obj,obj.log[row.parent],obj1.parent)
-  }else if(obj.log[row.parent] !== undefined){
+  if(obj1.parent !== undefined && obj.table[row.parent] !== undefined){
+    return searchParent(obj,obj.table[row.parent],obj1.parent)
+  }else if(obj.table[row.parent] !== undefined){
     if(typeof (obj1) == "string" || obj1 instanceof String){
     return row[obj1]
     }else if(isObject(obj1)){
@@ -571,7 +596,7 @@ function searchChild(obj,val,row,obj1){ //<<<
   return {}
 }
  
-  function getJointTable(row,paramE,obj1){
+  function getJointTable2(obj1,row,paramE){
     var data = row.jsonData
     var parent = {}
     if(row.nextJoint){
@@ -597,16 +622,16 @@ function searchChild(obj,val,row,obj1){ //<<<
     return obj1;
   }
 
-  function getJointTable2(obj,row,paramE){
+  function getJointTable(obj,row,paramE){
     var data = row.jsonData
     var parent = {}
     if(row.nextJoint){
       for (var i = 0; i < row.nextJoint.length; i++){
-        parent[row.nextJoint[i]] = row.jointName
+        parent[row.nextJoint[i]] = row.jointkey || row.jointName
       }
     }    
     obj = obj || {}
-    obj.log = obj.log || {}
+    obj.table = obj.table || {}
     var keyColumn = data.field.indexOf(data.linkField.jointName)
  /*   var field = row.jsonData.field
     for (var i = 0; i < field.length; i++){
@@ -617,30 +642,38 @@ function searchChild(obj,val,row,obj1){ //<<<
       field[i] = obj1
     }*/
     var ary = loadSpreadSheet(data.spredSheetID,data.sheetName,data.offset)
-    obj["spredSheetID"] = data.spredSheetID
-    obj["sheetName"]    = data.sheetName
-    obj["offset"]       = data.offset
+    var joints = rowObjectJoint2(ary,keyColumn,row,parent)
+    
     obj["settings"]     = data
     obj["thisLibrary"]  = data.thisLibrary
     obj["paramE"]       = paramE
-    obj["prev"]         = []
-    obj["list"]         = []
     obj["callbacks"]    = obj.callcacks || {}
-              
-    obj.table = rowObjectJoint2(ary,keyColumn,row,parent)
+//    obj["data"] = obj["data"] || []
+//    obj["response"] = obj["response"] || []
+
+    if(this["initialDatas"] !== undefined && row.func == "setDataJoint"){
+      this["initialData"].push({"joints":joints,"next":row.nextJoint})
+    }
+    if(this["response"] !== undefined && row.func == "setPropertiesJoint"){
+      this["response"].push({"joints":joints,"next":row.nextJoint})      
+    }
+    
+    obj.table = marge(obj.table,joints)
     return obj;
   }
 
 
 function selfDumpJoint(obj,val,row,options,jsonData){
-  var joint =getJointTable2(obj,row)
+  row.func = "setDataJoint"
+  var joint =getJointTable.call(this,obj,row)
   var dump = "<div class='row'><div class='panel panel-default'><div class='panel-heading strong'>Dump</div><div class='panel-body text-left'>"
-  for(var key in joint.table){
-  dump += key + ">>>" + JSON.stringify(joint.table[key]) + "<br><br>"
-  }
+//  for(var key in joint.table){
+  dump += JSON.stringify(joint.table)// key + ">>>" + JSON.stringify(joint.table[key]) + "<br><br>"
+//  }
   dump += "</div></div></div>"
-this.content += dump
-  return {"escape":"dump"}
+ // this.contents += JSON.stringify(joint.data)
+  this.contents += dump
+return {"escape":{"dump":dump}}
 }
 
 function rowObjectJoint2(ary,keyColumn,row,opt_parent,opt_child){
@@ -662,7 +695,7 @@ function rowObjectJoint2(ary,keyColumn,row,opt_parent,opt_child){
     }
   }
   for (var i = 0; i < ary.length; i++){
-    var name = "R" + (i + (data.offset *1)) + ary[i][keyColumn]
+    var name = data.sheetName + "R" + (i + (data.offset *1)) + ary[i][keyColumn]
     var jointName = ary[i][keyColumn]
     if(ary[i][keyColumn]){
     for (var j = 0; j < ary[i].length; j++){
@@ -689,7 +722,11 @@ function rowObjectJoint2(ary,keyColumn,row,opt_parent,opt_child){
     }
       parentName[jointName] = name
       obj[name]["rowIndex"] = i + Number(data.offset)
-      obj[name]["rowName"] = obj.sheetName
+      obj[name]["rowName"] = data.sheetName
+      obj[name]["jointKey"] = name
+      obj[name]["spredSheetID"] = data.spredSheetID
+      obj[name]["sheetName"] = data.sheetName
+      obj[name]["offset"] = data.offset
       if(obj[parent[jointName]] !== undefined && obj[parent[jointName]]){
         obj[name].parent = (parent[jointName] !== undefined && parent[jointName]) ? parent[jointName] : ""
         obj[name].index = (index[jointName] !== undefined && index[jointName]) ? index[jointName] : 0
@@ -782,7 +819,8 @@ function rowObjectJoint(ary,keyColumn,row,opt_parent,opt_child){
         }
       }
       delete obj[name]["options"][jointName]
-    }
+      }
+      obj[name].nameSpace = name
       parentName[jointName] = name
       obj[name]["rowIndex"] = i + Number(data.offset)
       obj[name]["rowName"] = obj.sheetName
@@ -865,6 +903,14 @@ function rowObjectJoint(ary,keyColumn,row,opt_parent,opt_child){
       return (o instanceof Object && !(o instanceof Array)) ? true : false;
   };
 
+function timeStamp(arg){
+  if(arg !== undefined && arg){
+    return Moment.moment().format(arg)
+  }else{
+    return Moment.moment()
+  }
+}
+
   function getUserId(){
     return Session.getActiveUser().getUserLoginId();
   }
@@ -881,33 +927,37 @@ function rowObjectJoint(ary,keyColumn,row,opt_parent,opt_child){
 
   // contens 
   
-    this.parameter = parameter;  
-    this.title = "suzunari";
-    this.faviconUrl = "https://dl.dropboxusercontent.com/s/5ksh84yv74revaa/Suzunari.ico";
-    this.settings = {};
-    this.data = {};
-    this.contensList = ["css","plugins","pluginCss","javascript","jqueryIni","navberHeader","header","content","modal","footer","navbarFooter"]
+    this.parameter = parameter;
+    
+    this.initialDatas = []
+    this.response = []
+    
+    this.htmlTag = ""
+    this.metaTag = ""
+    this.viewport = ""
+    
+    this.title = "";
+    this.faviconUrl = "";
+    this.initialData = {};
   
-    this.css = ""
     this.plugins = ""
     this.pluginCss = ""
+    this.css = ""
     this.javascript = ""
     this.jqueryIni = ""
   
-    this.navbarHeader = "";
-    this.header = '<h4>Suzunari</h4>';
-    this.content = "";
-    this.modal = "";
-    this.footer = "<small><a href='#'> Suzunari since 2017 made japan.</a></small><br>";
-    this.navbarFooter = "";
+    this.contents = "";
   
   // function
   
     this.evaluate = function() {
       var html = HtmlService.createTemplateFromFile('main');
+      
+      
+      html.htmlTag = this.htmlTag
+      html.metaTag = this.metaTag
   
-      html.settings = JSON.stringify(this.settings);
-      html.data = JSON.stringify(this.data);
+      html.initialData = JSON.stringify(this.initialData);
 
       html.css = this.css;
       html.plugins = this.plugins;
@@ -915,21 +965,20 @@ function rowObjectJoint(ary,keyColumn,row,opt_parent,opt_child){
       html.javascript = this.javascript;
       html.jqueryIni = this.jqueryIni;
     
-      html.navbarHeader = this.navbarHeader
-      html.header = this.header// + "</div>";
-      html.modal = this.modal;
-      html.content = this.content;   
-      html.footer = this.footer;
-      html.navbarFooter = this.navbarFooter
+      html.contents = this.contents;
     
       if(this.faviconUrl && this.title){
-        return html.evaluate().setTitle(this.title).setFaviconUrl(this.faviconUrl);
+        var ret = html.evaluate().setTitle(this.title).setFaviconUrl(this.faviconUrl);
       }else if(this.title){
-        return html.evaluate().setTitle(this.title);
+        var ret = html.evaluate().setTitle(this.title);
       }else if(this.faviconUrl){
-        return html.evaluate().setFaviconUrl(this.faviconUrl);
+        var ret = html.evaluate().setFaviconUrl(this.faviconUrl);
       } else {
-        return html.evaluate();
+        var ret = html.evaluate();
       }
-    }  
+      if(this.viewport){
+      ret.addMetaTag('viewport',this.viewport)
+      }
+      return ret
+    } 
   }

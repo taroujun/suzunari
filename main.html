@@ -1,23 +1,23 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html <?= htmlTag ?>>
 <html>
 <head>
 
-<meta charset="UTF-8">
-
-    
-    <? output.append(this.css); ?>
+  <? metaTag ?>
   
   <? output.append(this.plugins); ?>
   <? output.append(this.pluginCss); ?>
 
+  <style>
+  
+    <? output.append(this.css); ?>
+    
+  </style>
   
   <script>
 
-var json = <?= settings ?>;
-var settings = $.parseJSON(json);
-var jsonData = <?= data ?>;
-var data = $.parseJSON(jsonData);
+var jsonData = <?= initialData ?>;
+var initialData = $.parseJSON(jsonData);
   
   <? output.append(this.javascript); ?>
   
@@ -35,45 +35,14 @@ var data = $.parseJSON(jsonData);
     
     </head>
     <body>
-    <div class="container-fluid p0m0">
-    <header class="header row">
     
-    <? output.append(this.header); ?>         <!--/.header-area-->
+    <? output.append(this.contents); ?> <!--/.content-area-->
     
-    </header>
-    <div class="container-fluid p0m0">
-    
-    <? output.append(this.navbarHeader); ?>
-    
-    </div>
-    <div class="container-fluid p0m0">
-    
-    <? output.append(this.content); ?> <!--/.content-area-->
-    
-    </div>
-    <div class="container-fluid p0m0">
-    
-    <? output.append(this.modal); ?>      <!--/.modal-area-->
-    
-    </div>
-    <footer class="footer row">
-    <div class="container-fluid p0m0">
-    
-    <? output.append(this.footer); ?>  <!--/.footer-area-->
-    
-    </div>
-    </footer>
-    <br><br>
-    
-    <? output.append(this.navbarFooter); ?>
-    </div>
     <script>
     $(function() {
   
-  var json = <?= settings ?>;
-  var settings = $.parseJSON(json);
-  var jsonData = <?= data ?>;
-  var data = $.parseJSON(jsonData);
+  var jsonData = <?= initialData ?>;
+  var initialData = $.parseJSON(jsonData);
   
   initializeJquery(settings,data);
   
