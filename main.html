@@ -25,7 +25,7 @@ var initialData = $.parseJSON(jsonData);
   
   <script>
   
-  function initializeJquery(settings,data) {
+  function initializeJquery(initialData) {
   
   <? output.append(this.jqueryIni); ?>
     
@@ -44,7 +44,7 @@ var initialData = $.parseJSON(jsonData);
   var jsonData = <?= initialData ?>;
   var initialData = $.parseJSON(jsonData);
   
-  initializeJquery(settings,data);
+  initializeJquery(initialData);
   
   });
   </script>
