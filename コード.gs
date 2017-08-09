@@ -15,8 +15,8 @@
  }
 
  function loadContent(e){
-   var obj1 = JSON.parse(e.parameter.jointData);
-   return searchFunc.call(e,obj1.func,obj1.library,obj1.jsonData.thisLibrary,e,obj1,obj1.options,obj1.jsonData);
+   var joint = JSON.parse(e.parameter.jointData);
+   return searchFunc.call(e,joint.func,joint.library,joint.jsonData.thisLibrary,e,joint,joint.options,joint.jsonData);
  }
 
 function setLayoutJoint(joints,current,options,jsonData){
@@ -26,7 +26,6 @@ function setLayoutJoint(joints,current,options,jsonData){
     arguments[1] = next
     arguments[2] = next.options
     arguments[3] = next.jsonData    
-//    var val2 ={}
     var thisObj = setContainer(this)
     if(current.nextJoint){
       for (var i = 0; i < current.nextJoint.length; i++){     
@@ -43,6 +42,7 @@ function setLayoutJoint(joints,current,options,jsonData){
 
 function contentsDump(thisObj,param){
   var html = HtmlService.createTemplateFromFile('dumpDone');
+  var props = PropertiesService.getScriptProperties();
   var obj = {}
   var ary = []
   var joint = {jointName:"test",
@@ -58,22 +58,24 @@ function contentsDump(thisObj,param){
   }
   obj["initialDatas"] = thisObj.initialDatas
   obj["initialData"] = getJointTable({},thisObj.initialDatas)
-
-  obj["response"] = thisObj.response
-  var url = "<a href='" + param.scriptUrl + "?jointData=" + JSON.stringify(joint) + "'>test</a>"
-  var re = new RegExp("\"","g");
- // url = url.replace(re,"---");
+  obj["response"] = {}
+  obj["response"] = JSON.parse(props.getProperty("joints"))
+  var url = "<a href='" + param.scriptUrl + "?jointData=" + JSON.stringify(joint) + "'>" + param.scriptUrl + "?jointData=" + JSON.stringify(joint) + "</a>"
   ary.push(JSON.stringify(obj)) 
-  html.dump = url// url.replace(re,"\\\"");
+  html.dump = "<h4>Done</h4><br><br><a>It exported</a><br><br>"
   html.url = url
   writeSpreadsheet(param.spredSheetID,param.sheetName,ary,true,1,1);
   return html
 }
 
 function runningScriptJoint(joints,current,options,jsonData){
+  var props = PropertiesService.getScriptProperties();
   var thisObj = setContainer(this)
   var ary = loadSpreadSheet(current.jsonData.spredSheetID,current.jsonData.sheetName,current.jsonData.offset,1,1,1,1)
   var data = JSON.parse(ary[0])
+  var response = {}
+  response.joints = JSON.stringify(data["response"])
+  props.setProperties(response)
   thisObj = combine(thisObj,data.html)
   arguments[0] = data["initialData"]
   arguments[1] = data["initialDatas"]
@@ -82,6 +84,29 @@ function runningScriptJoint(joints,current,options,jsonData){
   thisObj = combine(thisObj,recursiveSearch.call(thisObj,arguments,0))
   return thisObj
 }
+
+  function setPropertiesJoint(joints,current,options,jsonData){
+    current.jsonData = replaceContensTag(joints,current.jsonData,current,{})
+    var data = {}
+    var props = PropertiesService.getScriptProperties();
+    data.joints = JSON.stringify(getJointTable.call(this,{},current,joints.paramE))//????
+//    data.current = JSON.stringify(current)
+    props.setProperties(data)
+    return {}
+  }
+
+  function requestSearch(req) { //<<< cng! here
+    var props = PropertiesService.getScriptProperties();
+    var joints = JSON.parse(props.getProperty("joints"))
+//    var current = JSON.parse(props.getProperty("current"))
+    var joint = joints.table[req.jointName]
+//    current.rowName = "current"
+//    joint.rowName = "next"
+//    joint.prev = current.jointName
+//    joint.parent = current.jointName  //???? jointKey?
+//    joints.table[joint.jointName] = joint
+    return searchFunc.call(req,joint.func,joint.library,joints.thisLibrary,joints,joint,joint.options,joint.jsonData);
+  }
 
   function changeSheetJoint(joints,current,options,jsonData){
     current.jsonData = replaceContensTag(joints,current.jsonData,current,{})
@@ -95,6 +120,11 @@ function runningScriptJoint(joints,current,options,jsonData){
     }
   }
 
+function suzunariDataJoint(joints,current,options,jsonData){
+  var val2 = multipleJoint.call(this,joints,current,options,jsonData)
+  joints.callbacks.push()
+}
+
   function setDataJoint(joints,current,options,jsonData){
     current.jsonData = replaceContensTag(joints,current.jsonData,current,{})
     var joints = getJointTable.call(this,joints,current,joints.paramE)
@@ -107,15 +137,6 @@ function runningScriptJoint(joints,current,options,jsonData){
     }else{
       return replaceContensTag(joints,jsonData,current,{}) //<<<?
     }
-  }
-
-  function setPropertiesJoint(joints,current,options,jsonData){
-    var data = {}
-    data.joints = JSON.stringify(getJointTable.call(this,joints,current,joints.paramE))
-    var props = PropertiesService.getScriptProperties();
-    data.current = JSON.stringify(current)
-    props.setProperties(data)
-    return {}
   }
 
   function separateJoint(joints,current,options,jsonData){
@@ -173,6 +194,7 @@ function runningScriptJoint(joints,current,options,jsonData){
       }else if(jsonData){
         ret = jsonData
       }
+//      this.contents += current.jointName
       ret.escape = options || {}
       return ret
     }
@@ -441,45 +463,30 @@ function writeSpreadsheet(ssId,sheetName,data,insert,startRow,startCol){ //inser
         }
   }
 
-  function requestSearch(req) { //<<< cng! here
-    var props = PropertiesService.getScriptProperties();
-    var joints = JSON.parse(props.getProperty("joints"))
-    var current = JSON.parse(props.getProperty("current"))
-    var joint = joints.table[req.jointName]
-//    current.rowName = "current"
-//    joint.rowName = "next"
-//    joint.prev = current.jointName
-    joint.parent = current.jointName  //???? jointKey?
-    joints.table[joint.jointName] = joint
-    return searchFunc.call(req,joint.func,joint.library,joints.thisLibrary,joints,current,joint,joint.options,joint.jsonData);
-  }
-
- function recursiveSearch(arg,i){
-   var i = i || 0
-   var args = JSON.parse(JSON.stringify(Array.prototype.slice.call(arguments[0])));
-   var joints = args[0]
-   var current = args[1]
+function recursiveSearch(arg,i){
+  var i = i || 0
+  var args = JSON.parse(JSON.stringify(Array.prototype.slice.call(arguments[0])));
+  var joints = args[0]
+  var current = args[1]
    
-   if(current !== undefined && current && joints.table[current.nextJoint[i]] !== undefined){
-         var f = joints.table[current.nextJoint[i]].func || "multipleJoint"
-         var libfunc = libraryApply(f);
-       if(libfunc !== undefined) {
-         var ary = [joints,
-                    joints.table[current.nextJoint[i]],
-                    joints.table[current.nextJoint[i]].options,
-                    joints.table[current.nextJoint[i]].jsonData,]
-         if(joints.callbacks){
-           for(var key in joints.callbacks){
-             joints.callbacks[key].apply(this,ary);
-           }
-         }
-       var ret = libfunc.call(this,ary);
-       ret.escape = joints.table[current.nextJoint[i]].options
-         return ret
-       
-     }
-   }
- }
+  if(current !== undefined && current && joints.table[current.nextJoint[i]] !== undefined){
+    var f = joints.table[current.nextJoint[i]].func || "multipleJoint"
+    var libfunc = libraryApply(f);
+    if(libfunc !== undefined) {
+      var ary = [joints,joints.table[current.nextJoint[i]],
+                 joints.table[current.nextJoint[i]].options,
+                 joints.table[current.nextJoint[i]].jsonData,]        
+      if(joints.callbacks){
+        for(var key in joints.callbacks){
+          joints.callbacks[key].apply(this,ary);
+        }
+      }
+      var ret = libfunc.call(this,ary);
+      ret.escape = joints.table[current.nextJoint[i]].options
+      return ret       
+    }
+  }
+}
  
 function replaceNextTag(joints,current,ret){
   var val1 = replaceContensTag(joints,ret,current,{})
@@ -552,7 +559,7 @@ function margeFanc(joints,current,obj1){
 }
 
 function internalReplaceWord(joints,current){
-  this.nameSpace = current.nameSpace//joints.sheetName + "R" + current.rowIndex + "I" + current.index
+  this.nameSpace = current.jointKey//joints.sheetName + "R" + current.rowIndex + "I" + current.index
   this.spredSheetID = current.spredSheetID
   this.sheetName = current.sheetName
   this.offset = current.offset
@@ -777,7 +784,7 @@ function timeStamp(arg){
     this.item = ["htmlTag",
                  "metaTag",
                  "viewport",
-                 "title",
+                 "browserTitle",
                  "faviconUrl",
                  "plugins",
                  "pluginCss",
@@ -795,7 +802,7 @@ function timeStamp(arg){
     this.metaTag = ""
     this.viewport = ""
     
-    this.title = "";
+    this.browserTitle = "";
     this.faviconUrl = "";
     this.initialData = {};
   
@@ -825,11 +832,11 @@ function timeStamp(arg){
       html.jqueryIni = this.jqueryIni;
     
       html.contents = this.contents;
-    
-      if(this.faviconUrl && this.title){
-        var ret = html.evaluate().setTitle(this.title).setFaviconUrl(this.faviconUrl);
-      }else if(this.title){
-        var ret = html.evaluate().setTitle(this.title);
+   
+      if(this.faviconUrl && this.browserTitle){
+        var ret = html.evaluate().setTitle(this.browserTitle).setFaviconUrl(this.faviconUrl);
+      }else if(this.browserTitle){
+        var ret = html.evaluate().setTitle(this.browserTitle);
       }else if(this.faviconUrl){
         var ret = html.evaluate().setFaviconUrl(this.faviconUrl);
       } else {

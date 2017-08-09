@@ -26,7 +26,7 @@ function Vertically(bool){
     $(".w-size").removeClass("col-sm-6");
     $(".w-size").addClass("col-xs-12");
  //   $(".main-table").css("background-size","400px auto");
- //   $(".main-table").css("background-image","url('https://dl.dropboxusercontent.com/s/xufhy5a994akotg/a300png.png')");
+    $(".main-table").css("background-image","url('https://dl.dropboxusercontent.com/s/xufhy5a994akotg/a300png.png')");
   }else{
     $('.btn-cng').children("button").removeClass("btn-xxl");
     $('.btn-cng').children("button").addClass("btn-lg");
@@ -47,6 +47,13 @@ function pageCanger(num){
   $("html,body").animate({scrollTop:0});
  // alert('開け　ページ' + num);
 }
+function Vertically(bool){
+var vImage = 'https://dl.dropboxusercontent.com/s/xufhy5a994akotg/a300png.png';
+var hImage = 'https://dl.dropboxusercontent.com/s/ulmuzszz2lwvlyo/advanex_logo2.png';
+if(bool){$('.v-zoom').css('zoom','1.8');
+$('.v-image').css('background-size':'400px auto','background-image':'url(\"' + vImage + '\")');
+}else{$('.v-zoom').css('zoom','normal');
+$('.v-image').css('background-size':'1200px auto','background-image':'url(' + hImage + ')')};};
 
 //function 
 function castRequest(req,jointName){
