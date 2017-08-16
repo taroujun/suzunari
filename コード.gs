@@ -16,28 +16,45 @@
 
  function loadContent(e){
    var joint = JSON.parse(e.parameter.jointData);
-   return searchFunc.call(e,joint.func,joint.library,joint.jsonData.thisLibrary,e,joint,joint.options,joint.jsonData);
+   return searchFunc.call(e,joint.func,"suzunari","suzunari"
+                          ,e,joint,joint.options,joint.jsonData);
  }
 
 function setLayoutJoint(joints,current,options,jsonData){
     arguments[0] = getJointTable({},current,this);
     current = arguments[0].table[current.jointName]
     var next = arguments[0].table[current.nextJoint[0]]
+//    joints.callbacks[0] = function(joints,current,options,jsonData){ return current.jointName}
+//    this.content += joints.callbacks[0]()
     arguments[1] = next
     arguments[2] = next.options
     arguments[3] = next.jsonData    
     var thisObj = setContainer(this)
+    var val = {}
     if(current.nextJoint){
       for (var i = 0; i < current.nextJoint.length; i++){     
-        thisObj = combine(thisObj,recursiveSearch.call(thisObj,arguments,i))
+        val = combine(val,recursiveSearch.call(thisObj,arguments,i))
       }
     }
-  //thisObj.contents += JSON.stringify(next)
+   thisObj = combine(thisObj,replaceContensTag2(joints,val,current,internalSource(thisObj,val)))
+//  thisObj.contents += thisObj.jqueryIni//JSON.stringify()
   if(this.parameter.dump !== undefined){
     return contentsDump.call(this,thisObj,JSON.parse(this.parameter.dump))
   }else{
   return thisObj
   }
+}
+function internalSource(thisObj,val){
+  var obj = {}
+  for (var i = 0; i < thisObj.item.length; i++){
+    var source = val[thisObj.item[i]]
+    if(isString(val)){
+      obj["" + thisObj.item[i]] = source
+    }else{
+      obj["" + thisObj.item[i]] = source
+    }
+  }
+ return obj
 }
 
 function contentsDump(thisObj,param){
@@ -45,6 +62,8 @@ function contentsDump(thisObj,param){
   var props = PropertiesService.getScriptProperties();
   var obj = {}
   var ary = []
+  var data = {}
+  var keys = props.getKeys()
   var joint = {jointName:"test",
                func:"runningScriptJoint",
                library:"suzunari",
@@ -56,10 +75,13 @@ function contentsDump(thisObj,param){
     obj["html"] = obj["html"] || {}
     obj["html"][thisObj.item[i]] = thisObj[thisObj.item[i]]
   }
+  for (var i = 0; i < keys.length; i++){
+    data[keys[i]] = props.getProperty(keys[i])
+  }
   obj["initialDatas"] = thisObj.initialDatas
   obj["initialData"] = getJointTable({},thisObj.initialDatas)
   obj["response"] = {}
-  obj["response"] = JSON.parse(props.getProperty("joints"))
+  obj["response"] = data
   var url = "<a href='" + param.scriptUrl + "?jointData=" + JSON.stringify(joint) + "'>" + param.scriptUrl + "?jointData=" + JSON.stringify(joint) + "</a>"
   ary.push(JSON.stringify(obj)) 
   html.dump = "<h4>Done</h4><br><br><a>It exported</a><br><br>"
@@ -74,8 +96,7 @@ function runningScriptJoint(joints,current,options,jsonData){
   var ary = loadSpreadSheet(current.jsonData.spredSheetID,current.jsonData.sheetName,current.jsonData.offset,1,1,1,1)
   var data = JSON.parse(ary[0])
   var response = {}
-  response.joints = JSON.stringify(data["response"])
-  props.setProperties(response)
+  props.setProperties(data.response)
   thisObj = combine(thisObj,data.html)
   arguments[0] = data["initialData"]
   arguments[1] = data["initialDatas"]
@@ -86,149 +107,91 @@ function runningScriptJoint(joints,current,options,jsonData){
 }
 
   function setPropertiesJoint(joints,current,options,jsonData){
-    current.jsonData = replaceContensTag(joints,current.jsonData,current,{})
+    current.jsonData = replaceContensTag2(joints,current.jsonData,current,{})
+    arguments[0] = getJointTable.call(this,joints,current,joints.paramE)
     var data = {}
     var props = PropertiesService.getScriptProperties();
-    data.joints = JSON.stringify(getJointTable.call(this,{},current,joints.paramE))//????
-//    data.current = JSON.stringify(current)
+    var joint = getJointTable.call(this,{},current,joints.paramE)
+    for(var key in joint.table){
+    data[key] = JSON.stringify(joint.table[key])
+    }
+    delete joint.table;
+    data.joints = JSON.stringify(joint);
     props.setProperties(data)
     return {}
   }
 
-  function requestSearch(req) { //<<< cng! here
+  function requestSearch(req) {
     var props = PropertiesService.getScriptProperties();
-    var joints = JSON.parse(props.getProperty("joints"))
-    joints.requests = req
-//    var current = JSON.parse(props.getProperty("current"))
+    var data = {}
+    var keys = props.getKeys()
+    for (var i = 0; i < keys.length; i++){
+      data[keys[i]] = JSON.parse(props.getProperty(keys[i]))
+    }
+    var joints = data.joints
+    delete data.joints
+    joints.table = data
     var joint = joints.table[req.jointName]
-//    current.rowName = "current"
-//    joint.rowName = "next"
-//    joint.prev = current.jointName
-//    joint.parent = current.jointName  //???? jointKey?
-//    joints.table[joint.jointName] = joint
+    joints.requests = req
     return searchFunc.call(req,joint.func,joint.library,joints.thisLibrary,joints,joint,joint.options,joint.jsonData);
   }
 
   function changeSheetJoint(joints,current,options,jsonData){
-    current.jsonData = replaceContensTag(joints,current.jsonData,current,{})
+    current.jsonData = replaceContensTag2(joints,current.jsonData,current,{})
     arguments[0] = getJointTable.call(this,joints,current,joints.paramE)
    if(current.nextJoint){
       for (var i = 0; i < current.nextJoint.length; i++){
         return recursiveSearch.call(this,arguments,i)
       }
     }else{
-      return replaceContensTag(joints,jsonData,current,{}) //<<<?
+      return replaceContensTag2(joints,jsonData,current,{}) //<<<?
     }
   }
 
-function suzunariDataJoint(joints,current,options,jsonData){
-  var val2 = multipleJoint.call(this,joints,current,options,jsonData)
-  joints.callbacks.push()
-}
-
   function setDataJoint(joints,current,options,jsonData){
-    current.jsonData = replaceContensTag(joints,current.jsonData,current,{})
+    current.jsonData = replaceContensTag2(joints,current.jsonData,current,{})
     var joints = getJointTable.call(this,joints,current,joints.paramE)
     arguments[0] = joints
- //   this.data.push({"joints":joints,"next":current.nextJoint})
     if(current.nextJoint){
       for (var i = 0; i < current.nextJoint.length; i++){
         return recursiveSearch.call(this,arguments,i)
       }
     }else{
-      return replaceContensTag(joints,jsonData,current,{}) //<<<?
+      return replaceContensTag2(joints,jsonData,current,{}) //<<<?
     }
   }
 
-  function separateJoint(joints,current,options,jsonData){
-    var val2 = {}
+  function separateJoint(joints,current,options,jsonData){//jsonData は呼び出した回数呼ばれる。中身も回数呼ばれる
+    var val = {}
     if(current.nextJoint !== undefined && current.nextJoint){
       for (var i = 0; i < current.nextJoint.length; i++){
-        var ret = recursiveSearch.call(this,arguments,i);
-        val2 = combine(val2,replaceNextTag.call(this,joints,current,ret))
+        var val2 = replaceContensTag2(joints,recursiveSearch.call(this,arguments,i),current,JSON.parse(JSON.stringify(options)));
+        var jData = replaceContensTag2(joints,jsonData,current,val2.escape)
+        delete val2.escape
+        val = combine(val,replaceContensTag2(joints,jData,current,val2,true))
       }
-      return val2;
+      return val
     }else{
-      var ret = {}
       if(jsonData && options){
-        ret = replaceContensTag(joints,jsonData,current,{})
+        val = replaceContensTag2(joints,jsonData,current,{})
       }else if(jsonData){
-        ret = jsonData
+        val = jsonData
       }
-      ret.escape = options || {}
-      return ret
+      return val
     }
-  }
-
-  function arrayJoint(joints,current,options,jsonData){
-    var val2 = {}
-    var ary =[]
-    if(current.nextJoint){
-      for (var i = 0; i < current.nextJoint.length; i++){
-        var ret = recursiveSearch.call(this,arguments,i)
-        delete ret.escape
-        ary.push(ret)
-      }
-    }else{
-      ary.push(replaceContensTag(joints,jsonData,current,{}))
-    }
-    if(options.releaseVal){
-      stackReleaseVal.call(val2,options.releaseVal,ary)
-    }else{
-      val2["tempReleaseVal"] = ary
-    }
-    return val2
   }
 
   function multipleJoint(joints,current,options,jsonData){
-    var val2 = {}
-    if(current.nextJoint !== undefined && current.nextJoint){
-      for (var i = 0; i < current.nextJoint.length; i++){
-        var ret = recursiveSearch.call(this,arguments,i);
-        val2 = combine(val2,replaceContensTag(joints,ret,current,{}));
-      }
-      return combine(replaceContensTag(joints,jsonData,current,val2),val2)
-    }else{
-      var ret = {}
-      if(jsonData && options){
-        ret = replaceContensTag(joints,jsonData,current,{})
-      }else if(jsonData){
-        ret = jsonData
-      }
-//      this.contents += current.jointName
-      ret.escape = options || {}
-      return ret
-    }
- }
-
-  function separateJoint2(joints,current,options,jsonData){
-    return crossReplace.call(this,joints,current,options,jsonData,{},true)
-  }
-
-
-  function multipleJoint2(joints,current,options,jsonData){
-      return crossReplace.call(this,joints,current,options,jsonData)
- }
-
-function crossReplace(joints,current,options,jsonData,data,separate){
   var val = {}
-  var escape = {}
   if(current.nextJoint !== undefined && current.nextJoint){
-    if(separate){
-      for (var i = 0; i < current.nextJoint.length; i++){
-        var val2 = replaceContensTag2(joints,recursiveSearch.call(this,arguments,i),current,options);
-        jsonData = replaceContensTag2(joints,jsonData,current,val2.escape)
-        val = marge(val,replaceContensTag2(joints,jsonData,current,val2,true))
-      }
-    }else{
-      for (var i = 0; i < current.nextJoint.length; i++){
-        var val2 = replaceContensTag2(joints,recursiveSearch.call(this,arguments,i),current,options);
-        escape = marge(escape,val2.escape)
-        val = combine(val,val2);
-      }
-      jsonData = replaceContensTag2(joints,jsonData,current,escape)
+    var escape = {}
+    for (var i = 0; i < current.nextJoint.length; i++){
+      var val2 = replaceContensTag2(joints,recursiveSearch.call(this,arguments,i),current,JSON.parse(JSON.stringify(options)));
+      escape = combine(escape,val2.escape)
+      delete val2.escape
+      val = combine(val,val2);
     }
-    val = (data) ? marge(val,data) : val
+  //  current.options = marge(current.options,escape)
     return replaceContensTag2(joints,jsonData,current,val,true)
   }else{
     if(jsonData && options){
@@ -236,14 +199,13 @@ function crossReplace(joints,current,options,jsonData,data,separate){
     }else if(jsonData){
       val = jsonData
     }
-    val.escape = options || {}
     return val
   }
-}
+  }
 
 function replaceContensTag2(joints,target,current,data,addData){
-  var option = margeFanc2(joints,current,data)
-  if(target !== undefined && target && isObject(target)){
+  var option = (current !== undefined && current) ? margeFanc2(joints,current) : data
+  if(target !== undefined && target && isObject(target) && isObject(option)){
     return replaceTemplateTag2(target,option,data,addData)
   }else if(addData){
     return data
@@ -252,8 +214,7 @@ function replaceContensTag2(joints,target,current,data,addData){
 
 function margeFanc2(joints,current){
   var obj2 = {}
-  if(current !== undefined){
-    var option = current.options || {}
+  var option = (isObject(current.options)) ? current.options : {}
 //  obj1 = marge(obj1,obj1.escape)
 //  delete obj1.escape
 //  obj1 = obj1 || {}
@@ -297,30 +258,29 @@ function margeFanc2(joints,current){
   }
     internalReplaceWord2.call(obj2,joints,current)
   return obj2
-  }
 }
 
 function internalReplaceWord2(joints,current){
-  this["@nameSpace"] = current.jointKey
-  this["@spredSheetID"] = current.spredSheetID
-  this["@sheetName"] = current.sheetName
-  this["@offset"] = current.offset
-  this["@jointName"] = current.jointName
-  this["@index"] = current.index
-  this["@rowIndex"] = current.rowIndex
-  this["@parent"] = joints.table[current.parent].jointKey
+  this["nameSpace"] = current.jointKey || "non"
+  this["spredSheetID"] = current.spredSheetID || "non"
+  this["sheetName"] = current.sheetName || "non"
+  this["offset"] = current.offset || "non"
+  this["jointName"] = current.jointName || "non"
+  this["index"] = current.index || "non"
+  this["rowIndex"] = current.rowIndex || "non"
+  this["parent"] = current.parent || "non"
   if(joints.paramE){
     for(var key in joints.paramE.parameter){
-      this["@param-" + key] = joints.paramE.parameter[key]
+      this["param-" + key] = joints.paramE.parameter[key]
     }
   }
   if(joints.requests){
     for(var key in joints.requests){
-      this["@req-" + key] = joints.requests[key]
+      this["req-" + key] = joints.requests[key]
     }
     if(joints.requests.requests){
       for(var key in joints.requests.requests){
-        this["@req-" + key] = joints.requests.requests[key]
+        this["req-" + key] = joints.requests.requests[key]
       }
     }
   }
@@ -330,186 +290,135 @@ function internalReplaceWord2(joints,current){
   function replaceTemplateTag2(text,obj,data,addData){
     text = JSON.stringify(text)
     obj = marge(obj,data)
+    var data2 = (data && isObject(data)) ? JSON.parse(JSON.stringify(data)) : {}
     for(var key in obj){
-      var re1 = new RegExp("<\\?=? *(" + key + "|this." + key + ") *\\?>","g");
-      var re2 = new RegExp("\"<\\!=? *(" + key + "|this." + key + ") *\\!>\"","g");
-      var re3 = new RegExp("\\{\\?=? *(" + key + "|this." + key + ") *\\?\\}","g");
+      var re1 = new RegExp("<\\?=? *#?(" + key + "|this." + key + ") *\\?>","g");
+      var re2 = new RegExp("<\\!=? *#?(" + key + "|this." + key + ") *\\!>","g");
+      var re3 = new RegExp("\"\\{\\?=? *#?(" + key + "|this." + key + ") *\\?\\}\"","g");
       if(re1.test(text) || re2.test(text) || re3.test(text)){
         if(isObject(obj[key]) || isArray(obj[key])){
           var json = JSON.stringify(obj[key])
+          json = json.replace( /\$/g , "@#@#@#@#@" )
           text = text.replace(re1,json.replace( /\"/g , "'" ));
-          text = text.replace(re2,json);
-          text = text.replace(re3,json.replace( /\"/g , "\\\"" ));
+          text = text.replace(re2,json.replace( /\"/g , "\\\"" ));
+          text = text.replace(re3,json);
+          text = text.replace(/@#@#@#@#@/g,"\$");
         }else{
-          text = text.replace(re1,obj[key]);
-          text = text.replace(re2,obj[key]);
-          text = text.replace(re3,obj[key]);
+          var wrd = obj[key]
+          if(isString(wrd)) wrd = wrd.replace( /\$/g , "@#@#@#@#@" )
+          text = text.replace(re1,wrd);
+          text = text.replace(re2,wrd);
+          text = text.replace(re3,wrd);
+          text = text.replace(/@#@#@#@#@/g,"\$");
         }
-        if(data[key]){
-          delete data[key]
+        if(data2[key]){
+          delete data2[key]
         }
       }
     }
     if(addData){
-      return combine(JSON.parse(text),data)
+      return combine(JSON.parse(text),data2)
     }else{
       return JSON.parse(text)
     }
   }
 
-function writeSheetJoint(joints,current,options,jsonData){
+function writeRowJoint(joints,current,options,jsonData){
   var ary = []
-  var val2 = multipleJoint.call(this,joints,current,options,jsonData)
-/*  if(current.nextJoint && current !== undefined){
-    for (var i = 0; i < current.nextJoint.length; i++){
-       var ret = recursiveSearch.call(this,arguments,i);
-      val2 = combine(val2,replaceContensTag(joints,ret,current,{}));
-    }
-    val2 = combine(replaceContensTag(joints,jsonData,current,val2),val2)
-  }else{
-    val2 = replaceContensTag(joints,jsonData,current,{})
-  }*/
-  for(var i = 0; i < jsonData.field.length; i++){
-    if(val2 && val2[jsonData.field[i]] !== undefined){
-      if(jsonData.jsonField !== undefined && jsonData.jsonField.indexOf(jsonData.field[i]) >= 0){
-        ary.push(JSON.stringify(val2[jsonData.field[i]]))
+  var val = multipleJoint.call(this,joints,current,options,jsonData)
+  if(val.field){
+    for(var i = 0; i < val.field.length; i++){
+      if(val.field[i].requestName !== undefined && val.field[i].requestName && val.field[i].val !== undefined && val.field[i].val){
+        if(val.field[i].jsonField !== undefined && val.field[i].jsonField){
+          if(val.field[i].jsonField == "parse"){
+            ary.push(JSON.parse(val.field[i].val))
+          }else if(val.field[i].jsonField == "stringify"){
+            ary.push(JSON.stringify(val.field[i].val))
+          }
+        }else{
+          ary.push(val.field[i].val)
+        }
+      }else if(val[val.field[i]] !== undefined && val[val.field[i]]){
+        if(val.jsonField !== undefined && val.jsonField.indexOf(val.field[i]) >= 0){
+          ary.push(JSON.stringify(val[val.field[i]]))
+          delete val[val.field[i]];
+        }else{
+          ary.push(val[val.field[i]])
+          delete val[val.field[i]];
+        }
+      }else if(this.requests && this.requests[val.field[i].requestName] !== undefined){
+        if(val.jsonField !== undefined && val.jsonField !== undefined && val.jsonField.indexOf(val.field[i]) >= 0){
+          if(val.field[i].jsonField == "parse"){
+            ary.push(JSON.parse(this.requests[val.field[i].requestName]))
+          }else if(val.field[i].jsonField == "stringify"){
+            ary.push(JSON.stringify(this.requests[val.field[i].requestName]))
+          }
+        }else{
+          ary.push(this.requests[val.field[i].requestName])
+        }
+      }else if(this.requests && this.requests[val.field[i]] !== undefined){
+        if(val.jsonField !== undefined && val.jsonField !== undefined && val.jsonField.indexOf(val.field[i]) >= 0){
+          ary.push(JSON.stringify(this.requests[val.field[i]]))
+        }else{
+          ary.push(this.requests[val.field[i]])
+        }
       }else{
-      ary.push(val2[jsonData.field[i]])
+        ary.push(val.emptyWord || "")
       }
-    }else if(this.requests && this.requests[jsonData.field[i]] !== undefined){
-      if(jsonData.jsonField !== undefined && jsonData.jsonField.indexOf(jsonData.field[i]) >= 0){
-        ary.push(JSON.stringify(this.requests[jsonData.field[i]]))
-      }else{
-      ary.push(this.requests[jsonData.field[i]])
-      }
-    }else{
-      ary.push(jsonData.emptyWord || "")
     }
   }
-  writeSpreadsheet(jsonData.spredSheetID,jsonData.sheetName,ary,true,jsonData.startRow,jsonData.startCol);
-  return jsonData.spredSheetID
-}
-
-function stackObjectJoint(joints,current,options,jsonData){
-  var val2 = {}
-  if(current.nextJoint && current !== undefined){
-    for (var i = 0; i < current.nextJoint.length; i++){
-       var ret = recursiveSearch.call(this,arguments,i);
-      val2 = recursiveMarge(val2,replaceContensTag(joints,ret,current,{}));
-    }
-//    val2 = combine(replaceContensTag(joints,jsonData,current,val2),val2)
-  }else{
-    val2 = replaceContensTag(joints,jsonData,current,{})
-  }
-//  this.content += JSON.stringify(val2)
-  for(var key in jsonData){
-      var rel2 = {}
-      var obj2 = {}
-    if(isObject(jsonData[key])){
-      for(var key2 in jsonData[key]){
-        rel2 = jsonData[key][key2]
-        obj2[key] = {}
-        obj2[key][key2] = val2[key]
-      }
-      if(val2[key]){
-        stackReleaseVal.call(val2,rel2,obj2)
-      }
-    }else{
-      val2[jsonData[key]] = {}
-      val2[jsonData[key]][key] = val2[key]
-    }
-    delete val2[key]
-  }
-  
-  return val2
-}
-
-function recursiveMarge(obj1,obj2){
-  for(var key in obj2){
-    if(obj1[key] !== undefined && obj1[key]){
-      obj1[key] = recursiveMarge(obj1[key],obj2[key]);
-    }else{
-      obj1[key] = obj2[key]
-    }
-  }
-  return obj1
-}
-
-function stackReleaseVal(rel,val){
-  if(isObject(rel)){
-    var rel2 = {}
-    var obj2 = {}
-    for(var key in rel){
-      rel2 = rel[key]
-      obj2[key] = val
-    }
-    stackReleaseVal.call(this,rel2,obj2)
-  }else{
-    this[rel] = val
-  }
+  delete val.field ; delete val.jsonField ; delete val.emptyWord;
+  writeSpreadsheet(val.spredSheetID,val.sheetName,ary,true,val.startRow,val.startCol);
+  delete val.spredSheetID ; delete val.sheetName ; delete val.startRow ; delete val.startCol;
+  return val
 }
 
 function loadSheetJoint(joints,current,options,jsonData){
-  var val2 = multipleJoint.call(this,joints,current,options,jsonData)
-/*  if(current.nextJoint && current !== undefined){
-    for (var i = 0; i < current.nextJoint.length; i++){
-       var ret = recursiveSearch.call(this,arguments,i);
-      val2 = combine(val2,replaceContensTag(joints,ret,current,{}));
-    }
-    val2 = combine(replaceContensTag(joints,jsonData,current,val2),val2)
-  }else{
-    val2 = replaceContensTag(joints,jsonData,current,{})
-  }*/
-  var sheet = loadSpreadSheet(jsonData.spredSheetID,jsonData.sheetName,jsonData.startRow,jsonData.endRow,jsonData.startCol,jsonData.endCol);
-  if(options.releaseVal){
-      stackReleaseVal.call(val2,options.releaseVal,sheet)
-  }else{
-      val2["tempReleaseVal"] = sheet
-//    val2["initialData"] = {}
-//    val2["initialData"][current.jointName] = sheet
-  }
-  return val2
+  var val = multipleJoint.call(this,joints,current,options,jsonData)
+  var sheet = {"load_sheet_joint":loadSpreadSheet(val.spredSheetID,val.sheetName,val.startRow,val.endRow,val.startCol,val.endCol)};
+  delete val.spredSheetID; delete val.sheetName; delete val.startRow; delete val.endRow; delete val.startCol; delete val.endCol
+  return replaceContensTag2(joints,val,null,sheet,true)
+}
+
+function arrayObjectJoint(joints,current,options,jsonData){
+    var val = multipleJoint.call(this,joints,current,options,jsonData)
+    var catchVal = val["#load_sheet_joint"] || val["load_sheet_joint"] || val["#array_joint"] || val["array_joint"] || [[]]
+    var sheet = {"array_object_joint":castArraylist(catchVal,val.fieldName,val.jsonField,val.emptyWord)}
+    delete val.fieldName ; delete val.jsonField ; delete val.emptyWord;
+  return replaceContensTag2(joints,val,null,sheet,true)
 }
 
   function jsonStringifyJoint(joints,current,options,jsonData){
     var val = multipleJoint.call(this,joints,current,options,jsonData)
-    var val2 = {}
-    val = JSON.stringify(val)
-    if(options.releaseVal){
-      stackReleaseVal.call(val2,options.releaseVal,val.replace( /\"/g , "'" ))
-    }else{
-      val2["tempReleaseVal"] = val.replace( /\"/g , "'" )
-    }
-    return val2
+    var jsonD = {"json_stringify_joint":JSON.stringify(val)}
+    return replaceContensTag2(joints,val,null,jsonD,true)
   }
 
-
-
-function arrayObjectJoint(joints,current,options,jsonData){
-  var val2 = multipleJoint.call(this,joints,current,options,jsonData)
-/*    if(current.nextJoint){
-      if(current.nextJoint && current !== undefined){
-        for (var i = 0; i < current.nextJoint.length; i++){
-          var ret = recursiveSearch.call(this,arguments,i);
-          val2 = combine(val2,replaceContensTag(joints,ret,current,{}));
-        }
-        val2 = combine(replaceContensTag(joints,jsonData,current,val2),val2)
-      }else{
-        val2 = replaceContensTag(joints,jsonData,current,{})
-      }*/
-      var val3 = {}
-      if(val2.tempReleaseVal)val3 =val2.tempReleaseVal
-      if(options.catchVal)val3 = val2[options.catchVal]
-   //   this.content += JSON.stringify(jsonData.fieldName)
-      var sheet = castArraylist(val3,jsonData.fieldName,jsonData.jsonField,jsonData.emptyWord)
-      if(options.releaseVal){
-        stackReleaseVal.call(val2,options.releaseVal,sheet)
-      }else{
-        val2["tempReleaseVal"] = sheet
+  function arrayJoint(joints,current,options,jsonData){
+    var val = {}
+    var ary =[]
+    var array_joint = {}
+    array_joint["array_joint"] = []
+    if(current.nextJoint){
+    var escape = {}
+      for (var i = 0; i < current.nextJoint.length; i++){
+        var val2 = replaceContensTag2(joints,recursiveSearch.call(this,arguments,i),current,JSON.parse(JSON.stringify(options)));
+        escape = combine(escape,val2.escape)
+        delete val2.escape
+        ary.push(val2)
       }
-      return val2
-  //  }
-}
+      array_joint["array_joint"] = ary
+    current.options = marge(current.options,escape)
+    return replaceContensTag2(joints,jsonData,current,array_joint,true)
+    }else{
+      if(jsonData && options){
+        val = replaceContensTag2(joints,jsonData,current,array_joint,true)
+      }else if(jsonData){
+        val = replaceContensTag2(joints,jsonData,null,array_joint,true)
+      }
+      return val
+    }
+  }
 
 function castArraylist(ary,fieldName,opt_jsonField,opt_word){
   opt_word = opt_word || ""
@@ -517,12 +426,25 @@ function castArraylist(ary,fieldName,opt_jsonField,opt_word){
   for (var i = 0; i < ary.length; i++){
     var obj = {};
     for (var j = 0; j < ary[i].length; j++){
-      if(fieldName[j]){
-        if(ary[i][j] && opt_jsonField && opt_jsonField.indexOf(fieldName[j]) >= 0 ){
+      if(fieldName[j] !== undefined && fieldName[j]){
+        fieldName[j].colName = (fieldName[j].colName) ? fieldName[j].colName : fieldName[j].field
+        if(ary[i][j] && fieldName[j].colName !== undefined && fieldName[j].colName && fieldName[j].jsonField !== undefined && fieldName[j].jsonField){
+          if(fieldName[j].jsonField == "parse"){
+          obj[fieldName[j].colName] = JSON.parse(ary[i][j]);
+          }else if(fieldName[j].jsonField == "stringify"){
+          obj[fieldName[j].colName] = JSON.stringify(ary[i][j]);
+          }
+        } else if(fieldName[j].colName !== undefined && fieldName[j].colName && fieldName[j].jsonField !== undefined && fieldName[j].colName){
+          obj[fieldName[j].colName] = fieldName[j].jsonField;
+        } else if(ary[i][j] && fieldName[j].colName !== undefined && fieldName[j].colName){
+          obj[fieldName[j].colName] = ary[i][j];
+        } else if(fieldName[j].colName !== undefined && fieldName[j].colName){
+          obj[fieldName[j].colName] = opt_word;
+        }else if(ary[i][j] && isString(fieldName[j]) && opt_jsonField && opt_jsonField.indexOf(fieldName[j]) >= 0 ){
           obj[fieldName[j]] = JSON.parse(ary[i][j]);
-        }else if(ary[i][j]){
+        }else if(ary[i][j] && isString(fieldName[j])){
           obj[fieldName[j]] = ary[i][j];
-        } else {
+        }else{
           obj[fieldName[j]] = opt_word
         };
       };
@@ -585,11 +507,7 @@ function writeSpreadsheet(ssId,sheetName,data,insert,startRow,startCol){ //inser
               obj1[key] = obj2[key];
             }
           }else if(isObject(obj2[key])){
-//            if(obj1[key] == obj2[key]){
-//              obj1[obj1[key]][key] = obj2[key]//<<<<
-//            }else{
             obj1[key] = marge(obj1[key],obj2[key])
-//            }
           }else if(Object.prototype.toString.call(obj2[key]) === '[object Array]'){
             if(obj1[key] !== undefined && obj1[key] && Object.prototype.toString.call(obj1[key]) === '[object Array]'){
               obj1[key].concat(obj2[key]);
@@ -632,7 +550,8 @@ function recursiveSearch(arg,i){
     var f = joints.table[current.nextJoint[i]].func || "multipleJoint"
     var libfunc = libraryApply(f);
     if(libfunc !== undefined) {
-      var ary = [joints,joints.table[current.nextJoint[i]],
+      var ary = [joints,
+                 joints.table[current.nextJoint[i]],
                  joints.table[current.nextJoint[i]].options,
                  joints.table[current.nextJoint[i]].jsonData,]        
       if(joints.callbacks){
@@ -647,93 +566,6 @@ function recursiveSearch(arg,i){
   }
 }
  
-function replaceNextTag(joints,current,ret){
-  var val1 = replaceContensTag(joints,ret,current,{})
-  var val2 = replaceContensTag(joints,current.jsonData,current,ret.escape)
-  var val3 = replaceContensTag(joints,val2,current,val1)
- return marge(val3,val1)
-} 
-
-function replaceContensTag(joints,target,current,ret){
-  var rep = {}
-  var obj1 = margeFanc(joints,current,ret)
-  if(target !== undefined && target && obj1 !== undefined && obj1){
-    if(typeof (target) == "string" || target instanceof String){
-      rep = replaceTemplateTag(target,obj1)
-    }else if(isObject(target)){
-      rep = JSON.parse(replaceTemplateTag(JSON.stringify(target),obj1))
-    }
-  }
-  return rep;
-}
-
-function margeFanc(joints,current,obj1){
-  var obj2 = {}
-  if(current !== undefined && obj1 !== undefined){
-  obj1 = marge(obj1,current.options)
-  obj1 = marge(obj1,obj1.escape)
-  delete obj1.escape
-  obj1 = obj1 || {}
-  for(var key in obj1){
-    if(obj1[key].func !== undefined && key !== current.jointName){
-      var ary = []
-      var row2 = current
-      var library = obj1[key].library || ""
-      var argAry = obj1[key].argAry || ""
-      var thisLibrary = joints.thisLibrary || ""
-      if(obj1[key].nextJoint){
-        row2 = joints[obj1[key].nextJoint]        
-      }
-      ary.push(obj1[key].func);
-      ary.push(library);
-      ary.push(thisLibrary)
-      if(obj1[key].func.indexOf("Joint") ===  obj1[key].func.length - 5){
-      ary.push(joints)
-      ary.push(row2)
-        }
-      ary.push(argAry)
-      obj2[key] = searchFunc.apply(this,ary);
-    }else if(obj1[key].parent !== undefined){
-      var ret = searchParent(joints,current,obj1[key])
-          if(typeof (ret) == "string" || ret instanceof String){
-            obj2[key] = ret
-          }else if(isObject(ret) && ret !== undefined && ret){
-            for(var key2 in ret){
-              if(current[key2] !== undefined && isObject(current[key2])){
-                current[key2][key] = ret[key2]
-              }
-            }
-          }else{
-            obj2[key] = JSON.stringify(ret)
-          }
-    }else if(obj1[key].child !== undefined){
-      obj2[key] = searchChild(joints,current,obj1[key])
-    }else{
-      obj2[key] = obj1[key]
-    }
-  }
-    internalReplaceWord.call(obj2,joints,current)
-  return obj2
-  }
-}
-
-function internalReplaceWord(joints,current){
-  this.nameSpace = current.jointKey//joints.sheetName + "R" + current.rowIndex + "I" + current.index
-  this.spredSheetID = current.spredSheetID
-  this.sheetName = current.sheetName
-  this["@offset"] = current.offset
-  this.jointName = current.jointName
-  this.nextJoint = current.nextJoint
-  this.index = current.index
-  this.rowIndex = current.rowIndex
-//  this.prev = current.prev
-  if(joints.paramE){
-    for(var key in joints.paramE.parameter){
-      this[key] = joints.paramE.parameter[key]
-    }
-  }
-}
-
 function searchParent(joints,current,obj1){ //<<<
   if(obj1.parent !== undefined && joints.table[current.parent] !== undefined){
     return searchParent(joints,joints.table[current.parent],obj1.parent)
@@ -782,7 +614,7 @@ function searchChild(joints,val,current,obj1){ //<<<
       this["response"] = current      
     }
     
-    obj.table = marge(joints,obj.table)
+    obj.table = marge(obj.table,joints)
     return obj;
   }
 
@@ -837,10 +669,9 @@ function rowObjectJoint(ary,keyColumn,current,opt_parent,opt_child){
       obj[name]["spredSheetID"] = data.spredSheetID
       obj[name]["sheetName"] = data.sheetName
       obj[name]["offset"] = data.offset
-//      obj[name]["options"]["currentName"] = name
+      obj[name].parent = (parent[jointName] !== undefined && parent[jointName]) ? parent[jointName] : current.jointName
+      obj[name].index = (index[jointName] !== undefined && index[jointName]) ? index[jointName] : 0
       if(obj[parent[jointName]] !== undefined && obj[parent[jointName]]){
-        obj[name].parent = (parent[jointName] !== undefined && parent[jointName]) ? parent[jointName] : ""
-        obj[name].index = (index[jointName] !== undefined && index[jointName]) ? index[jointName] : 0
         if(obj[parent[jointName]]["nextJoint"].indexOf(jointName) >= 0){
           obj[parent[jointName]]["nextJoint"][obj[parent[jointName]]["nextJoint"].indexOf(jointName)] = name
         }else{
@@ -897,27 +728,6 @@ function rowObjectJoint(ary,keyColumn,current,opt_parent,opt_child){
     return obj1;
   }
   
-  function replaceTemplateTag(text,obj){
-    for(var key in obj){
-      var re1 = new RegExp("<\\?=? *(" + key + "|this." + key + ") *\\?>","g");
-      var re2 = new RegExp("\"<\\!=? *(" + key + "|this." + key + ") *\\!>\"","g");
-      var re3 = new RegExp("\\{\\?=? *(" + key + "|this." + key + ") *\\?\\}","g");
-      if(re1.test(text) || re2.test(text) || re3.test(text)){
-        if(isObject(obj[key]) || isArray(obj[key])){
-          var json = JSON.stringify(obj[key])
-          text = text.replace(re1,json.replace( /\"/g , "'" ));
-          text = text.replace(re2,json);
-          text = text.replace(re3,json.replace( /\"/g , "\\\"" ));
-        }else{
-          text = text.replace(re1,obj[key]);
-          text = text.replace(re2,obj[key]);
-          text = text.replace(re3,obj[key]);
-        }
-      }
-    }
-    return text;
-  }
-
   function replaceTag(val){
     var ret = val.replace( /'<script>'/g , "" );
     ret = ret.replace( /'<\/script>'/g , "" );
